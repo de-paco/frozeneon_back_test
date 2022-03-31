@@ -4,6 +4,8 @@ namespace Model;
 use App;
 use Exception;
 use http\Client\Curl\User;
+use Model\Enum\Transaction_info;
+use Model\Enum\Transaction_type;
 use stdClass;
 use System\Emerald\Emerald_model;
 

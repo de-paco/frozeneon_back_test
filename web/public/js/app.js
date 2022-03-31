@@ -43,7 +43,12 @@ var app = new Vue({
 	},
 	methods: {
 		logout: function () {
-			console.log ('logout');
+            axios.post('/main_page/logout')
+                .then(function (response) {
+                    if (response.data.status === 'success') {
+                        location.reload();
+                    }
+                })
 		},
 		logIn: function () {
 			var self= this;
@@ -64,7 +69,7 @@ var app = new Vue({
 
 				axios.post('/main_page/login', form)
 					.then(function (response) {
-						if (resonse.data.status === 'success') {
+						if (response.data.status === 'success') {
 							location.reload();
 
                             setTimeout(function () {
@@ -116,7 +121,7 @@ var app = new Vue({
                     .then(function (response) {
                         console.log(response.data)
                         setTimeout(function () {
-                        	// $('#addModal').modal('hide');
+                        	$('#addModal').modal('hide');
                         }, 500);
                     });
             }
@@ -154,6 +159,7 @@ var app = new Vue({
 				.then(function (response) {
 					self.amount = response.data.amount
 					if(self.amount !== 0){
+                        self.likes += response.data.amount;
 						setTimeout(function () {
 							$('#amountModal').modal('show');
 						}, 500);

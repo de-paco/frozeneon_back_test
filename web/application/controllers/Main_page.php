@@ -1,7 +1,9 @@
 <?php
 
+use Model\Analytics_model;
 use Model\Boosterpack_model;
 use Model\Comment_model;
+use Model\Enum\Transaction_info;
 use Model\Item_model;
 use Model\Login_model;
 use Model\Post_model;
@@ -59,7 +61,6 @@ class Main_page extends MY_Controller
 
     public function login()
     {
-        // TODO: текст ошибок заменить на константы
         if (User_model::is_logged()) {
             return $this->response_error('You are already logged in');
         }
@@ -88,8 +89,7 @@ class Main_page extends MY_Controller
     {
         Login_model::logout();
 
-        // TODO: пересмотреть, может есть другой вариант, нужен именно редирект. Сделать релоад на фронте?
-        $this->index();
+        return $this->response_success();
     }
 
     public function comment()
@@ -109,13 +109,7 @@ class Main_page extends MY_Controller
             return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_WRONG_PARAMS);
         }
 
-        $comment = Comment_model::create([
-            'user_id' => User_model::get_user()->get_id(),
-            'assign_id' => $postId,
-            'text' => $commentText,
-            'likes' => 0,
-        ]);
-        $comment = Comment_model::preparation($comment);
+        $comment = Comment_model::create_and_preparation($postId, $commentText);
 
         return $this->response_success(['comment' => $comment]);
     }
@@ -144,6 +138,8 @@ class Main_page extends MY_Controller
             if (!$currentUser->decrement_likes()) {
                 throw new Exception('Not affected');
             }
+
+            Analytics_model::create_remove($currentUser->get_id(), 1, Transaction_info::LIKES_COMMENT, $comment->get_id());
 
             $likes = $comment->reload()->get_likes();
 
@@ -182,6 +178,8 @@ class Main_page extends MY_Controller
                 throw new Exception('Not affected');
             }
 
+            Analytics_model::create_remove($currentUser->get_id(), 1, Transaction_info::LIKES_POST, $post->get_id());
+
             $likes = $post->reload()->get_likes();
 
             App::get_s()->commit()->execute();
@@ -218,6 +216,8 @@ class Main_page extends MY_Controller
             if (!$currentUser->add_money($roundSum)) {
                 throw new Exception('Not affected');
             }
+
+            Analytics_model::create_add($currentUser->get_id(), floor($roundSum), Transaction_info::WALLET, $currentUser->get_id());
 
             $walletBalance = $currentUser->reload()->get_wallet_balance();
 
@@ -277,6 +277,8 @@ class Main_page extends MY_Controller
             if (!$currentUser->add_likes($randomItem->get_price())) {
                 throw new Exception('Not affected');
             }
+
+            Analytics_model::create_remove($currentUser->get_id(), $boosterpack->get_price(), Transaction_info::BOOSTERPACK, $boosterpack->get_id());
 
             $boosterpack->set_bank($boosterpack->get_bank() + $boosterpack->get_price() - $boosterpack->get_us() - $randomItem->get_price());
 

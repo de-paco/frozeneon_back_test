@@ -248,16 +248,24 @@ class Comment_model extends Emerald_Model {
            ->update(sprintf('likes = likes + %s', App::get_s()->quote(1)))
            ->execute();
 
-        if (!App::get_s()->is_affected()) {
-            return false;
-        }
-
-        return true;
+        return App::get_s()->is_affected();
     }
 
     public static function get_all_by_replay_id(int $reply_id)
     {
         // TODO task 2, дополнительно, вложенность комментариев
+    }
+
+    public static function create_and_preparation(int $postId, string $commentText): stdClass
+    {
+        $comment = Comment_model::create([
+            'user_id' => User_model::get_user()->get_id(),
+            'assign_id' => $postId,
+            'text' => $commentText,
+            'likes' => 0,
+        ]);
+
+        return Comment_model::preparation($comment);
     }
 
     /**

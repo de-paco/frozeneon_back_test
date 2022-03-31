@@ -1,6 +1,8 @@
 <?php
 namespace Model;
 use App;
+use Model\Enum\Transaction_type;
+use stdClass;
 use System\Emerald\Emerald_model;
 
 class Analytics_model extends Emerald_Model
@@ -163,6 +165,28 @@ class Analytics_model extends Emerald_Model
     {
         parent::reload();
         return $this;
+    }
+
+    public static function create_add(int $userId, int $amount, string $objectType, int $objectId)
+    {
+        Analytics_model::create([
+            'user_id' => $userId,
+            'object' => $objectType,
+            'action' => Transaction_type::ADD,
+            'object_id' => $objectId,
+            'amount' => $amount,
+        ]);
+    }
+
+    public static function create_remove(int $userId, int $amount, string $objectType, int $objectId)
+    {
+        Analytics_model::create([
+            'user_id' => $userId,
+            'object' => $objectType,
+            'action' => Transaction_type::REMOVE,
+            'object_id' => $objectId,
+            'amount' => $amount,
+        ]);
     }
 
     public static function create(array $data)
