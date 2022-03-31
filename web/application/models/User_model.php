@@ -342,11 +342,12 @@ class User_model extends Emerald_model {
     /**
      * @param string $email
      *
-     * @return User_model
+     * @return User_model|null
      */
-    public static function find_user_by_email(string $email): User_model
+    public static function find_user_by_email(string $email): ?User_model
     {
-        // TODO: task 1, аутентификация
+        $userData = App::get_s()->from(self::CLASS_TABLE)->where(['email' => $email])->one();
+        return static::transform_one($userData);
     }
 
     /**
@@ -366,8 +367,6 @@ class User_model extends Emerald_model {
         $steam_id = intval(self::get_session_id());
         return $steam_id > 0;
     }
-
-
 
     /**
      * Returns current user or empty model

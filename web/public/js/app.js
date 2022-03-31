@@ -59,12 +59,21 @@ var app = new Vue({
 
 				axios.post('/main_page/login', form)
 					.then(function (response) {
-						if(response.data.user) {
+						if (response.data.status === 'success') {
 							location.reload();
-						}
-						setTimeout(function () {
-							$('#loginModal').modal('hide');
-						}, 500);
+
+                            setTimeout(function () {
+                                $('#loginModal').modal('hide');
+                            }, 500);
+						} else if (response.data.status === 'info') {
+                            if (response.data.error === 'invalidLogin') {
+                                self.invalidLogin = true;
+                            }
+
+                            if (response.data.error === 'invalidPass') {
+                                self.invalidPass = true;
+                            }
+                        }
 					})
 			}
 		},

@@ -1,6 +1,7 @@
 <?php
 
 use Model\Boosterpack_model;
+use Model\Login_model;
 use Model\Post_model;
 use Model\User_model;
 
@@ -45,14 +46,35 @@ class Main_page extends MY_Controller
 
     public function login()
     {
-        // TODO: task 1, аутентификация
+        if (User_model::is_logged()) {
+            return $this->response_error('User is already logged in');
+        }
+
+        $login = App::get_ci()->input->post('login');
+        $password = App::get_ci()->input->post('password');
+        if (empty($login) || empty($password)) {
+            return $this->response_error('Required parameters login and password must be specified');
+        }
+
+        $user = User_model::find_user_by_email($login);
+        if ($user->get_id() === null) {
+            return $this->response_info(['error' => 'invalidLogin']);
+        }
+
+        if ($user->get_password() !== $password) {
+            return $this->response_info(['error' => 'invalidPass']);
+        }
+
+        Login_model::login($user);
 
         return $this->response_success();
     }
 
     public function logout()
     {
-        // TODO: task 1, аутентификация
+        Login_model::logout();
+
+        return $this->response_success();
     }
 
     public function comment()
