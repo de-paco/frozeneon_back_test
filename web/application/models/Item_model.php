@@ -67,6 +67,11 @@ class Item_model extends Emerald_model {
         $this->set_id($id);
     }
 
+    public static function find_by_less_equals_price(int $price): array
+    {
+        return self::transform_many(App::get_s()->from(self::CLASS_TABLE)->where("price <= $price")->many());
+    }
+
     public function reload()
     {
         parent::reload();

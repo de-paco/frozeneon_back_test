@@ -140,7 +140,7 @@ class User_model extends Emerald_model {
         return $this->save('rights', $rights);
     }
 
-    public function get_likes_balance(): Int
+    public function get_likes_balance(): int
     {
         return $this->likes_balance;
     }
@@ -260,29 +260,21 @@ class User_model extends Emerald_model {
     }
 
     /**
-     * @param int $addBalance
+     * @param float $addBalance
      * @return bool
      * @throws Exception
      */
-    public function add_money(int $addBalance): bool
+    public function add_money(float $addBalance): bool
     {
-        // TODO: вот здесь должна быть транзакция!!!
-        $walletBalance = (int)($this->get_wallet_balance() * 100);
-        $walletTotalRefilled = (int)($this->get_wallet_total_refilled() * 100);
-
         App::get_s()->from(self::get_table())
            ->where(['id' => $this->get_id()])
            ->update([
-               'wallet_balance' => ($walletBalance + $addBalance) / 100,
-               'wallet_total_refilled' => ($walletTotalRefilled + $addBalance) / 100,
+               sprintf('wallet_balance = wallet_balance + %s', $addBalance),
+               sprintf('wallet_total_refilled = wallet_total_refilled + %s', $addBalance),
            ])
            ->execute();
 
-        if (!App::get_s()->is_affected()) {
-            return false;
-        }
-
-        return true;
+        return App::get_s()->is_affected();
     }
 
 
@@ -294,9 +286,25 @@ class User_model extends Emerald_model {
      */
     public function remove_money(float $sum): bool
     {
-        // TODO: task 5, списание денег
+        App::get_s()->from(self::get_table())
+           ->where(['id' => $this->get_id()])
+           ->update([
+               sprintf('wallet_balance = wallet_balance - %s', $sum),
+               sprintf('wallet_total_withdrawn = wallet_total_withdrawn + %s', $sum),
+           ])
+           ->execute();
 
-        return TRUE;
+        return App::get_s()->is_affected();
+    }
+
+    public function add_likes(int $likes): bool
+    {
+        App::get_s()->from(self::get_table())
+           ->where(['id' => $this->get_id()])
+           ->update(sprintf('likes_balance = likes_balance + %s', $likes))
+           ->execute();
+
+        return App::get_s()->is_affected();
     }
 
     /**
@@ -310,11 +318,7 @@ class User_model extends Emerald_model {
             ->update(sprintf('likes_balance = likes_balance - %s', App::get_s()->quote(1)))
             ->execute();
 
-        if (!App::get_s()->is_affected()) {
-            return false;
-        }
-
-        return true;
+        return App::get_s()->is_affected();
     }
 
     /**

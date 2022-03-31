@@ -2,6 +2,7 @@
 
 use Model\Boosterpack_model;
 use Model\Comment_model;
+use Model\Item_model;
 use Model\Login_model;
 use Model\Post_model;
 use Model\User_model;
@@ -131,18 +132,29 @@ class Main_page extends MY_Controller
             return $this->response_info(['error' => 'Likes balance is empty']);
         }
 
-        // TODO: обернуть в транзакцию, пока не нашел как
-        // TODO: попробовать найти нормальное решение
-        $comment = (new Comment_model())->set_id($commentId)->reload();
-        if (!$comment->increment_likes()) {
-            throw new Exception('Not affected');
+        App::get_s()->set_transaction_repeatable_read()->execute();
+        App::get_s()->start_trans()->execute();
+
+        try {
+            $comment = (new Comment_model())->set_id($commentId)->reload();
+            if (!$comment->increment_likes()) {
+                throw new Exception('Not affected');
+            }
+
+            if (!$currentUser->decrement_likes()) {
+                throw new Exception('Not affected');
+            }
+
+            $likes = $comment->reload()->get_likes();
+
+            App::get_s()->commit()->execute();
+        } catch (Throwable $throwable) {
+            App::get_s()->rollback()->execute();
+
+            throw $throwable;
         }
 
-        if (!$currentUser->decrement_likes()) {
-            throw new Exception('Not affected');
-        }
-
-        return $this->response_success(['likes' => (int)$comment->reload()->get_likes()]);
+        return $this->response_success(['likes' => (int)$likes]);
     }
 
     public function like_post(int $post_id)
@@ -157,18 +169,29 @@ class Main_page extends MY_Controller
             return $this->response_info(['error' => 'Likes balance is empty']);
         }
 
-        // TODO: обернуть в транзакцию, пока не нашел как
-        // TODO: попробовать найти нормальное решение
-        $post = (new Post_model())->set_id($post_id)->reload();
-        if (!$post->increment_likes()) {
-            throw new Exception('Not affected');
+        App::get_s()->set_transaction_repeatable_read()->execute();
+        App::get_s()->start_trans()->execute();
+
+        try {
+            $post = (new Post_model())->set_id($post_id)->reload();
+            if (!$post->increment_likes()) {
+                throw new Exception('Not affected');
+            }
+
+            if (!$currentUser->decrement_likes()) {
+                throw new Exception('Not affected');
+            }
+
+            $likes = $post->reload()->get_likes();
+
+            App::get_s()->commit()->execute();
+        } catch (Throwable $throwable) {
+            App::get_s()->rollback()->execute();
+
+            throw $throwable;
         }
 
-        if (!$currentUser->decrement_likes()) {
-            throw new Exception('Not affected');
-        }
-
-        return $this->response_success(['likes' => (int)$post->reload()->get_likes()]);
+        return $this->response_success(['likes' => (int)$likes]);
     }
 
     public function add_money()
@@ -177,24 +200,35 @@ class Main_page extends MY_Controller
             return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
         }
 
-        $sum = (float)App::get_ci()->input->post('sum');
-
         // Момент получения параметра sum довольно спорный. Как действовать правильно - точно не знаю, т.к. опыта работы с подобными системами нет
         // Моя логика такая: лучше у пользователя спишется меньше на один цент, чем больше на один
+        $sum = (float)App::get_ci()->input->post('sum');
 
         // При огромных числах float, число будем преобразовано в int 0, как обработать это корректно - пока не знаю
-        $roundSum = (int)floor($sum * 100);
+        $roundSum = floor($sum * 100) / 100;
         if ($roundSum <= 0) {
             return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_WRONG_PARAMS);
         }
 
-        // TODO: обернуть в транзакцию
-        $currentUser = User_model::get_user();
-        if (!$currentUser->add_money($roundSum)) {
-            throw new Exception('Not affected');
+        App::get_s()->set_transaction_serializable()->execute();
+        App::get_s()->start_trans()->execute();
+
+        try {
+            $currentUser = User_model::get_user();
+            if (!$currentUser->add_money($roundSum)) {
+                throw new Exception('Not affected');
+            }
+
+            $walletBalance = $currentUser->reload()->get_wallet_balance();
+
+            App::get_s()->commit()->execute();
+        } catch (Throwable $throwable) {
+            App::get_s()->rollback()->execute();
+
+            throw $throwable;
         }
 
-        return $this->response_success(['wallet_balance' => $currentUser->reload()->get_wallet_balance()]);
+        return $this->response_success(['wallet_balance' => $walletBalance]);
     }
 
     public function get_post(int $post_id) {
@@ -205,12 +239,55 @@ class Main_page extends MY_Controller
 
     public function buy_boosterpack()
     {
-        // Check user is authorize
         if (!User_model::is_logged()) {
             return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
         }
 
-        // TODO: task 5, покупка и открытие бустерпака
+        $id = App::get_ci()->input->post('id');
+        if (!is_numeric($id)) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_WRONG_PARAMS);
+        }
+
+        App::get_s()->set_transaction_serializable()->execute();
+        App::get_s()->start_trans()->execute();
+
+        try {
+            $boosterpack = Boosterpack_model::get_by_id($id);
+            if ($boosterpack === null) {
+                return $this->response_info(['error' => 'Boosterpack not found']);
+            }
+
+            $currentUser = User_model::get_user();
+            if ($currentUser->get_wallet_balance() < $boosterpack->get_price()) {
+                return $this->response_info(['error' => 'You don\'t have money']);
+            }
+
+            $maxItemPrice = $boosterpack->get_bank() + $boosterpack->get_price() - $boosterpack->get_us();
+            $availableItems = Item_model::find_by_less_equals_price($maxItemPrice);
+            if (empty($availableItems)) {
+                return $this->response_info(['error' => 'You don\'t have available items']);
+            }
+
+            $randomItem = $availableItems[rand(0, count($availableItems) - 1)];
+
+            if (!$currentUser->remove_money($boosterpack->get_price())) {
+                throw new Exception('Not affected');
+            }
+
+            if (!$currentUser->add_likes($randomItem->get_price())) {
+                throw new Exception('Not affected');
+            }
+
+            $boosterpack->set_bank($boosterpack->get_bank() + $boosterpack->get_price() - $boosterpack->get_us() - $randomItem->get_price());
+
+            App::get_s()->commit()->execute();
+        } catch (Throwable $throwable) {
+            App::get_s()->rollback()->execute();
+
+            throw $throwable;
+        }
+
+        return $this->response_success(['amount' => $randomItem->get_price()]);
     }
 
 

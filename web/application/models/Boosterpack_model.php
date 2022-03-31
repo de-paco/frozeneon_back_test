@@ -144,6 +144,16 @@ class Boosterpack_model extends Emerald_model
         $this->set_id($id);
     }
 
+    public static function get_by_id(int $id): ?Boosterpack_model
+    {
+        $boosterpasckData = App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
+        if (empty($boosterpasckData)) {
+            return null;
+        }
+
+        return (new static())->set($boosterpasckData);
+    }
+
     public function reload()
     {
         parent::reload();
