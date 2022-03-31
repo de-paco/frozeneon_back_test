@@ -33,6 +33,17 @@ class Main_page extends MY_Controller
         App::get_ci()->load->view('main_page', ['user' => User_model::preparation($user, 'default')]);
     }
 
+    public function get_likes_balance()
+    {
+        if (!User_model::is_logged()) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
+        }
+
+        $user = User_model::get_user();
+
+        return $this->response_success(['likes' => $user->get_likes_balance()]);
+    }
+
     public function get_all_posts()
     {
         $posts =  Post_model::preparation_many(Post_model::get_all(), 'default');
@@ -49,7 +60,7 @@ class Main_page extends MY_Controller
     {
         // TODO: текст ошибок заменить на константы
         if (User_model::is_logged()) {
-            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NO_ACCESS);
+            return $this->response_error('You are already logged in');
         }
 
         $login = App::get_ci()->input->post('login');
@@ -76,7 +87,7 @@ class Main_page extends MY_Controller
     {
         Login_model::logout();
 
-        // TODO: пересмотреть, может есть другой вариант, нужен именно редирект
+        // TODO: пересмотреть, может есть другой вариант, нужен именно редирект. Сделать релоад на фронте?
         $this->index();
     }
 
@@ -108,14 +119,56 @@ class Main_page extends MY_Controller
         return $this->response_success(['comment' => $comment]);
     }
 
-    public function like_comment(int $comment_id)
+    public function like_comment(int $commentId)
     {
-        // TODO: task 3, лайк комментария
+        if (!User_model::is_logged()) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
+        }
+
+        $currentUser = User_model::get_user();
+        $likesBalance = $currentUser->get_likes_balance();
+        if ($likesBalance === 0) {
+            return $this->response_info(['error' => 'Likes balance is empty']);
+        }
+
+        // TODO: обернуть в транзакцию, пока не нашел как
+        // TODO: попробовать найти нормальное решение
+        $comment = (new Comment_model())->set_id($commentId)->reload();
+        if (!$comment->increment_likes()) {
+            throw new Exception('Not affected');
+        }
+
+        if (!$currentUser->decrement_likes()) {
+            throw new Exception('Not affected');
+        }
+
+        return $this->response_success(['likes' => (int)$comment->reload()->get_likes()]);
     }
 
     public function like_post(int $post_id)
     {
-        // TODO: task 3, лайк поста
+        if (!User_model::is_logged()) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
+        }
+
+        $currentUser = User_model::get_user();
+        $likesBalance = $currentUser->get_likes_balance();
+        if ($likesBalance === 0) {
+            return $this->response_info(['error' => 'Likes balance is empty']);
+        }
+
+        // TODO: обернуть в транзакцию, пока не нашел как
+        // TODO: попробовать найти нормальное решение
+        $post = (new Post_model())->set_id($post_id)->reload();
+        if (!$post->increment_likes()) {
+            throw new Exception('Not affected');
+        }
+
+        if (!$currentUser->decrement_likes()) {
+            throw new Exception('Not affected');
+        }
+
+        return $this->response_success(['likes' => (int)$post->reload()->get_likes()]);
     }
 
     public function add_money()

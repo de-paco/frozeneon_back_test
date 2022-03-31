@@ -297,12 +297,11 @@ class User_model extends Emerald_model {
             ->update(sprintf('likes_balance = likes_balance - %s', App::get_s()->quote(1)))
             ->execute();
 
-        if ( ! App::get_s()->is_affected())
-        {
-            return FALSE;
+        if (!App::get_s()->is_affected()) {
+            return false;
         }
 
-        return TRUE;
+        return true;
     }
 
     /**

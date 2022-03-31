@@ -35,6 +35,11 @@ var app = new Vue({
 			.then(function (response) {
 				self.boosterpacks = response.data.boosterpacks;
 			})
+        axios
+            .get('/main_page/get_likes_balance')
+            .then(function (response) {
+                self.likes = response.data.likes;
+            })
 	},
 	methods: {
 		logout: function () {
@@ -127,15 +132,17 @@ var app = new Vue({
 					}
 				})
 		},
-		addLike: function (type, id) {
-			var self = this;
-			const url = '/main_page/like_' + type + '/' + id;
+		addLike: function (type, entity) {
+            let self = this;
+			const url = '/main_page/like_' + type + '/' + entity.id;
 			axios
 				.get(url)
 				.then(function (response) {
-					self.likes = response.data.likes;
+                    if (response.data.status === STATUS_SUCCESS) {
+                        entity.likes = +response.data.likes;
+                        self.likes--;
+                    }
 				})
-
 		},
 		buyPack: function (id) {
 			var self= this;
