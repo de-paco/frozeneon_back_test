@@ -74,7 +74,8 @@ class Main_page extends MY_Controller
     {
         Login_model::logout();
 
-        return $this->response_success();
+        // TODO: пересмотреть, может есть другой вариант, нужен именно редирект
+        $this->index();
     }
 
     public function comment()
@@ -101,7 +102,10 @@ class Main_page extends MY_Controller
     }
 
     public function get_post(int $post_id) {
-        // TODO получения поста по id
+        $post = Post_model::get_by_id($post_id);
+        $post['user'] = User_model::get_by_id($post['user_id']);
+
+        return $this->response_success(['post' => $post]);
     }
 
     public function buy_boosterpack()

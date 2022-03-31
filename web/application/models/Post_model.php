@@ -179,6 +179,11 @@ class Post_model extends Emerald_Model
         $this->set_id($id);
     }
 
+    public static function get_by_id(int $id): array
+    {
+        return App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
+    }
+
     public function reload()
     {
         parent::reload();

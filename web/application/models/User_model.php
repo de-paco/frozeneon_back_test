@@ -350,6 +350,11 @@ class User_model extends Emerald_model {
         return static::transform_one($userData);
     }
 
+    public static function get_by_id(int $id): array
+    {
+        return App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
+    }
+
     /**
      * Getting id from session
      * @return integer|null
