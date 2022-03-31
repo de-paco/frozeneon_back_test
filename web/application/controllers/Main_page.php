@@ -1,6 +1,7 @@
 <?php
 
 use Model\Boosterpack_model;
+use Model\Comment_model;
 use Model\Login_model;
 use Model\Post_model;
 use Model\User_model;
@@ -46,14 +47,15 @@ class Main_page extends MY_Controller
 
     public function login()
     {
+        // TODO: текст ошибок заменить на константы
         if (User_model::is_logged()) {
-            return $this->response_error('User is already logged in');
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NO_ACCESS);
         }
 
         $login = App::get_ci()->input->post('login');
         $password = App::get_ci()->input->post('password');
         if (empty($login) || empty($password)) {
-            return $this->response_error('Required parameters login and password must be specified');
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_WRONG_PARAMS);
         }
 
         $user = User_model::find_user_by_email($login);
@@ -80,7 +82,30 @@ class Main_page extends MY_Controller
 
     public function comment()
     {
-        // TODO: task 2, комментирование
+        if (!User_model::is_logged()) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
+        }
+
+        $postId = App::get_ci()->input->post('postId');
+        $commentText = App::get_ci()->input->post('commentText');
+        if (!is_numeric($postId) || empty($commentText)) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_WRONG_PARAMS);
+        }
+
+        $post = Post_model::exists_by_id($postId);
+        if (!$post) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_WRONG_PARAMS);
+        }
+
+        $comment = Comment_model::create([
+            'user_id' => User_model::get_user()->get_id(),
+            'assign_id' => $postId,
+            'text' => $commentText,
+            'likes' => 0,
+        ]);
+        $comment = Comment_model::preparation($comment);
+
+        return $this->response_success(['comment' => $comment]);
     }
 
     public function like_comment(int $comment_id)
@@ -102,8 +127,7 @@ class Main_page extends MY_Controller
     }
 
     public function get_post(int $post_id) {
-        $post = Post_model::get_by_id($post_id);
-        $post['user'] = User_model::get_by_id($post['user_id']);
+        $post = Post_model::get_full_by_id($post_id);
 
         return $this->response_success(['post' => $post]);
     }

@@ -155,7 +155,7 @@ class Comment_model extends Emerald_Model {
     /**
      * @return Int
      */
-    public function get_reply_id(): int
+    public function get_reply_id(): ?int
     {
         return $this->reply_id;
     }

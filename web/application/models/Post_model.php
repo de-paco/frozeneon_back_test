@@ -151,7 +151,7 @@ class Post_model extends Emerald_Model
      */
     public function get_comments():array
     {
-       // TODO: task 2, комментирование
+       return Comment_model::get_all_by_assign_id($this->get_id());
     }
 
     /**
@@ -179,9 +179,15 @@ class Post_model extends Emerald_Model
         $this->set_id($id);
     }
 
-    public static function get_by_id(int $id): array
+    public static function exists_by_id(int $id)
     {
-        return App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
+        return !empty(App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one());
+    }
+
+    public static function get_full_by_id(int $id)
+    {
+        $post = (new Post_model())->set(App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one());
+        return static::_preparation_full_info($post);
     }
 
     public function reload()

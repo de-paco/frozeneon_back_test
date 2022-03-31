@@ -59,7 +59,7 @@ var app = new Vue({
 
 				axios.post('/main_page/login', form)
 					.then(function (response) {
-						if (response.data.status === 'success') {
+						if (resonse.data.status === 'success') {
 							location.reload();
 
                             setTimeout(function () {
@@ -88,8 +88,11 @@ var app = new Vue({
 				axios.post(
 					'/main_page/comment',
 					comment
-				).then(function () {
-
+				).then(function (response) {
+                    if (response.data.status === STATUS_SUCCESS) {
+                        self.post.coments.push(response.data.comment);
+                        self.commentText = '';
+                    }
 				});
 			}
 
