@@ -103,21 +103,23 @@ var app = new Vue({
 
 		},
 		refill: function () {
-			var self= this;
-			if(self.addSum === 0){
-				self.invalidSum = true
-			}
-			else{
-				self.invalidSum = false
-				sum = new FormData();
-				sum.append('sum', self.addSum);
-				axios.post('/main_page/add_money', sum)
-					.then(function (response) {
-						setTimeout(function () {
-							$('#addModal').modal('hide');
-						}, 500);
-					})
-			}
+			var self = this;
+            if (self.addSum === 0 || isNaN(+self.addSum)) {
+                self.invalidSum = true;
+            } else {
+                self.invalidSum = false;
+
+                sum = new FormData();
+                sum.append('sum', self.addSum);
+
+                axios.post('/main_page/add_money', sum)
+                    .then(function (response) {
+                        console.log(response.data)
+                        setTimeout(function () {
+                        	// $('#addModal').modal('hide');
+                        }, 500);
+                    });
+            }
 		},
 		openPost: function (id) {
 			var self= this;

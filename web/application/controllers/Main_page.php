@@ -173,10 +173,28 @@ class Main_page extends MY_Controller
 
     public function add_money()
     {
-        // TODO: task 4, пополнение баланса
+        if (!User_model::is_logged()) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
+        }
 
         $sum = (float)App::get_ci()->input->post('sum');
 
+        // Момент получения параметра sum довольно спорный. Как действовать правильно - точно не знаю, т.к. опыта работы с подобными системами нет
+        // Моя логика такая: лучше у пользователя спишется меньше на один цент, чем больше на один
+
+        // При огромных числах float, число будем преобразовано в int 0, как обработать это корректно - пока не знаю
+        $roundSum = (int)floor($sum * 100);
+        if ($roundSum <= 0) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_WRONG_PARAMS);
+        }
+
+        // TODO: обернуть в транзакцию
+        $currentUser = User_model::get_user();
+        if (!$currentUser->add_money($roundSum)) {
+            throw new Exception('Not affected');
+        }
+
+        return $this->response_success(['wallet_balance' => $currentUser->reload()->get_wallet_balance()]);
     }
 
     public function get_post(int $post_id) {
@@ -188,8 +206,7 @@ class Main_page extends MY_Controller
     public function buy_boosterpack()
     {
         // Check user is authorize
-        if ( ! User_model::is_logged())
-        {
+        if (!User_model::is_logged()) {
             return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
         }
 
@@ -206,8 +223,7 @@ class Main_page extends MY_Controller
     public function get_boosterpack_info(int $bootserpack_info)
     {
         // Check user is authorize
-        if ( ! User_model::is_logged())
-        {
+        if (!User_model::is_logged()) {
             return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
         }
 

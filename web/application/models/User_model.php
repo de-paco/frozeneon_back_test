@@ -260,16 +260,29 @@ class User_model extends Emerald_model {
     }
 
     /**
-     * @param float $sum
-     *
+     * @param int $addBalance
      * @return bool
-     * @throws \ShadowIgniterException
+     * @throws Exception
      */
-    public function add_money(float $sum): bool
+    public function add_money(int $addBalance): bool
     {
-        // TODO: task 4, добавление денег
+        // TODO: вот здесь должна быть транзакция!!!
+        $walletBalance = (int)($this->get_wallet_balance() * 100);
+        $walletTotalRefilled = (int)($this->get_wallet_total_refilled() * 100);
 
-        return TRUE;
+        App::get_s()->from(self::get_table())
+           ->where(['id' => $this->get_id()])
+           ->update([
+               'wallet_balance' => ($walletBalance + $addBalance) / 100,
+               'wallet_total_refilled' => ($walletTotalRefilled + $addBalance) / 100,
+           ])
+           ->execute();
+
+        if (!App::get_s()->is_affected()) {
+            return false;
+        }
+
+        return true;
     }
 
 
