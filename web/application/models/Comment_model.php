@@ -227,6 +227,11 @@ class Comment_model extends Emerald_Model {
         return App::get_s()->is_affected();
     }
 
+    public static function get_by_id(int $id): Comment_model
+    {
+        return (new Comment_model())->set_id($id)->reload();
+    }
+
     /**
      * @param int $assign_id
      * @return self[]

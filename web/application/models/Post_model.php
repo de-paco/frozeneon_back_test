@@ -190,6 +190,11 @@ class Post_model extends Emerald_Model
         return static::_preparation_full_info($post);
     }
 
+    public static function get_by_id(int $id): Post_model
+    {
+        return (new Post_model())->set_id($id)->reload();
+    }
+
     public function reload()
     {
         parent::reload();

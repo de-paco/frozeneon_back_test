@@ -3,6 +3,7 @@ namespace Model;
 
 use App;
 use Exception;
+use Model\Enum\Transaction_info;
 use System\Emerald\Emerald_model;
 use stdClass;
 use ShadowIgniterException;
@@ -179,11 +180,38 @@ class Boosterpack_model extends Emerald_model
     }
 
     /**
+     * @param User_model $user
      * @return int
+     * @throws Exception
      */
-    public function open(): int
+    public function open(User_model $user): int
     {
-        // TODO: task 5, покупка и открытие бустерпака
+        $maxItemPrice = $this->get_bank() + $this->get_price() - $this->get_us();
+        $availableItems = Item_model::find_by_less_equals_price($maxItemPrice);
+        if (empty($availableItems)) {
+            throw new Exception('You don\'t have available items');
+        }
+
+        $randomItem = $availableItems[rand(0, count($availableItems) - 1)];
+
+        Boosterpack_info_model::create([
+            'boosterpack_id' => $this->get_id(),
+            'item_id' => $randomItem->get_id(),
+        ]);
+
+        if (!$user->remove_money($this->get_price())) {
+            throw new Exception('Not affected');
+        }
+
+        if (!$user->add_likes($randomItem->get_price())) {
+            throw new Exception('Not affected');
+        }
+
+        Analytics_model::create_remove($user->get_id(), $this->get_price(), Transaction_info::BOOSTERPACK, $this->get_id());
+
+        $this->set_bank($this->get_bank() + $this->get_price() - $this->get_us() - $randomItem->get_price());
+
+        return $randomItem->get_price();
     }
 
     /**

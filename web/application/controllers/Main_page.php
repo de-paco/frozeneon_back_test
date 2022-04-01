@@ -131,7 +131,7 @@ class Main_page extends MY_Controller
         App::get_s()->start_trans()->execute();
 
         try {
-            $comment = (new Comment_model())->set_id($commentId)->reload();
+            $comment = Comment_model::get_by_id($commentId);
             if (!$comment->increment_likes()) {
                 throw new Exception('Not affected');
             }
@@ -170,7 +170,7 @@ class Main_page extends MY_Controller
         App::get_s()->start_trans()->execute();
 
         try {
-            $post = (new Post_model())->set_id($post_id)->reload();
+            $post = Post_model::get_by_id($post_id);
             if (!$post->increment_likes()) {
                 throw new Exception('Not affected');
             }
@@ -249,6 +249,8 @@ class Main_page extends MY_Controller
             return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_WRONG_PARAMS);
         }
 
+        // Уровень транзакции SERIALIZABLE устанавливает Lock на таблицу, потому все последующие транзакции будут становиться "в очередь"
+        // и выполняться последовательно. Минус всего это - производительность
         App::get_s()->set_transaction_serializable()->execute();
         App::get_s()->start_trans()->execute();
 
@@ -259,34 +261,7 @@ class Main_page extends MY_Controller
             }
 
             $currentUser = User_model::get_user();
-            if ($currentUser->get_wallet_balance() < $boosterpack->get_price()) {
-                return $this->response_info(['error' => 'You don\'t have money']);
-            }
-
-            $maxItemPrice = $boosterpack->get_bank() + $boosterpack->get_price() - $boosterpack->get_us();
-            $availableItems = Item_model::find_by_less_equals_price($maxItemPrice);
-            if (empty($availableItems)) {
-                return $this->response_info(['error' => 'You don\'t have available items']);
-            }
-
-            $randomItem = $availableItems[rand(0, count($availableItems) - 1)];
-
-            Boosterpack_info_model::create([
-                'boosterpack_id' => $boosterpack->get_id(),
-                'item_id' => $randomItem->get_id(),
-            ]);
-
-            if (!$currentUser->remove_money($boosterpack->get_price())) {
-                throw new Exception('Not affected');
-            }
-
-            if (!$currentUser->add_likes($randomItem->get_price())) {
-                throw new Exception('Not affected');
-            }
-
-            Analytics_model::create_remove($currentUser->get_id(), $boosterpack->get_price(), Transaction_info::BOOSTERPACK, $boosterpack->get_id());
-
-            $boosterpack->set_bank($boosterpack->get_bank() + $boosterpack->get_price() - $boosterpack->get_us() - $randomItem->get_price());
+            $likes = $boosterpack->open($currentUser);
 
             App::get_s()->commit()->execute();
         } catch (Throwable $throwable) {
@@ -295,7 +270,7 @@ class Main_page extends MY_Controller
             throw $throwable;
         }
 
-        return $this->response_success(['amount' => $randomItem->get_price()]);
+        return $this->response_success(['amount' => $likes]);
     }
 
 
