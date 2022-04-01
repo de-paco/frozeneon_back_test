@@ -1,6 +1,7 @@
 <?php
 
 use Model\Analytics_model;
+use Model\Boosterpack_info_model;
 use Model\Boosterpack_model;
 use Model\Comment_model;
 use Model\Enum\Transaction_info;
@@ -269,6 +270,11 @@ class Main_page extends MY_Controller
             }
 
             $randomItem = $availableItems[rand(0, count($availableItems) - 1)];
+
+            Boosterpack_info_model::create([
+                'boosterpack_id' => $boosterpack->get_id(),
+                'item_id' => $randomItem->get_id(),
+            ]);
 
             if (!$currentUser->remove_money($boosterpack->get_price())) {
                 throw new Exception('Not affected');
