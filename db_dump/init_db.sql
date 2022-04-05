@@ -128,7 +128,7 @@ CREATE TABLE `user` (
 
 
 INSERT INTO `user` (`id`, `email`, `personaname`, `avatarfull`, `rights`, `likes_balance`, `wallet_balance`, `wallet_total_refilled`, `wallet_total_withdrawn`, `password_hash`, `session_login_hash`, `time_last_login`) VALUES
-(1, 'admin@admin.pl', 'Admin User', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/96/967871835afdb29f131325125d4395d55386c07a_full.jpg', 0, 0, 0, 0, 0, '9039c5aed891fd91383bef4fd220a727', null, null),
+(1, 'admin@admin.pl', 'Admin User', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/96/967871835afdb29f131325125d4395d55386c07a_full.jpg', 0, 100, 0, 0, 0, '9039c5aed891fd91383bef4fd220a727', null, null),
 (2, 'user@user.pl', 'User #1', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/86/86a0c845038332896455a566a1f805660a13609b_full.jpg', 0, 0, 0, 0, 0, 'ffe20c4683b351be716b43d7efdafb5e', null, null);
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
