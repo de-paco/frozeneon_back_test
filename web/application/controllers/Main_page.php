@@ -4,6 +4,13 @@ use Model\Boosterpack_model;
 use Model\Post_model;
 use Model\User_model;
 
+require_once(dirname(__FILE__). '/../services/LoginService.php');
+require_once(dirname(__FILE__). '/../helpers/LoginFormHelper.php');
+require_once(dirname(__FILE__). '/../helpers/CommentFormHelper.php');
+require_once(dirname(__FILE__). '/../helpers/PostFormHelper.php');
+require_once(dirname(__FILE__). '/../services/CommentService.php');
+require_once(dirname(__FILE__). '/../services/LikeService.php');
+
 /**
  * Created by PhpStorm.
  * User: mr.incognito
@@ -12,10 +19,8 @@ use Model\User_model;
  */
 class Main_page extends MY_Controller
 {
-
     public function __construct()
     {
-
         parent::__construct();
 
         if (is_prod())
@@ -45,29 +50,74 @@ class Main_page extends MY_Controller
 
     public function login()
     {
-        // TODO: task 1, аутентификация
+        if (User_model::is_logged()) {
+            return $this->response_error(\Helpers\LoginFormHelper::getErrorMessage('already_logged'), [], 400);
+        }
 
-        return $this->response_success();
+        $data = \Services\LoginService::login($_POST);
+
+        if (isset($data['errorCode'])) {
+            return $this->response_error(\Helpers\LoginFormHelper::getErrorMessage($data['errorCode']), [], 400);
+        }
+
+        if (!isset($data['user'])) {
+            return $this->response_error(\Helpers\LoginFormHelper::getErrorMessage('default_error'), [], 400);
+        }
+
+        \Model\Login_model::login($data['user']);
+
+        return $this->response_success(['user' => true]);
     }
 
     public function logout()
     {
-        // TODO: task 1, аутентификация
+        \Model\Login_model::logout();
+        redirect('/');
     }
 
     public function comment()
     {
-        // TODO: task 2, комментирование
+        if (!User_model::is_logged()) {
+            return $this->response_error(\Helpers\CommentFormHelper::getErrorMessage('not_auth'), [], 400);
+        }
+
+        $data = \Services\CommentService::getOnePostById($_POST);
+
+        if (isset($data['errorMsg'])) {
+            return $this->response_error($data['errorMsg'], [], 400);
+        }
+
+        return $this->response_success(['comment' => $data['comment']]);
     }
 
     public function like_comment(int $comment_id)
     {
-        // TODO: task 3, лайк комментария
+        if (!User_model::is_logged()) {
+            return $this->response_error(\Helpers\CommentFormHelper::getErrorMessage('not_auth'), [], 400);
+        }
+
+        $data = \Services\LikeService::likeComment($comment_id, User_model::get_user());
+
+        if (isset($data['errorCode'])) {
+            return $this->response_error(\Helpers\PostFormHelper::getErrorMessage($data['errorCode']), [], 400);
+        }
+
+        return $this->response_success($data);
     }
 
     public function like_post(int $post_id)
     {
-        // TODO: task 3, лайк поста
+        if (!User_model::is_logged()) {
+            return $this->response_error(\Helpers\CommentFormHelper::getErrorMessage('not_auth'), [], 400);
+        }
+
+        $data = \Services\LikeService::likePost($post_id, User_model::get_user());
+
+        if (isset($data['errorCode'])) {
+            return $this->response_error(\Helpers\PostFormHelper::getErrorMessage($data['errorCode']), [], 400);
+        }
+
+        return $this->response_success($data);
     }
 
     public function add_money()
@@ -78,8 +128,19 @@ class Main_page extends MY_Controller
 
     }
 
-    public function get_post(int $post_id) {
-        // TODO получения поста по id
+    public function get_post(int $post_id)
+    {
+        $post = \Model\Post_model::getOneById($post_id) ?? null;
+
+        if (empty($post)) {
+            return $this->response_error('Post not found');
+        }
+
+        $user = User_model::getUserDataByUserId((int)$post['user_id']) ?? null;
+        $post['user'] = $user;
+        $post['coments'] = \Model\Comment_model::getAllByPostId($post['id']);
+
+        return $this->response_success(['post' => $post]);
     }
 
     public function buy_boosterpack()

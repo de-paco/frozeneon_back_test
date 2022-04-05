@@ -57,6 +57,10 @@ var app = new Vue({
 				form.append("login", self.login);
 				form.append("password", self.pass);
 
+				const errorFeedback = $('.invalid-feedback');
+				$(errorFeedback).text('');
+				$(errorFeedback).hide();
+
 				axios.post('/main_page/login', form)
 					.then(function (response) {
 						if(response.data.user) {
@@ -66,12 +70,25 @@ var app = new Vue({
 							$('#loginModal').modal('hide');
 						}, 500);
 					})
+					.catch(function (error) {
+						$(errorFeedback).text(error.response.data.error_message)
+						$(errorFeedback).show();
+					})
 			}
 		},
 		addComment: function(id) {
 			var self = this;
-			if(self.commentText) {
 
+			const postErrorMsg = $('.post_error_message');
+			postErrorMsg.hide();
+
+			if (self.commentText.length < 1) {
+				postErrorMsg.text('Please fill up comment!');
+				postErrorMsg.show();
+				return false;
+			}
+
+			if(self.commentText) {
 				var comment = new FormData();
 				comment.append('postId', id);
 				comment.append('commentText', self.commentText);
@@ -79,8 +96,11 @@ var app = new Vue({
 				axios.post(
 					'/main_page/comment',
 					comment
-				).then(function () {
-
+				).then(function (response) {
+					location.reload();
+				}).catch(function (err) {
+					$(postErrorMsg).text(err.response.data.error_message);
+					$(postErrorMsg).show();
 				});
 			}
 
@@ -118,11 +138,21 @@ var app = new Vue({
 		addLike: function (type, id) {
 			var self = this;
 			const url = '/main_page/like_' + type + '/' + id;
+			const postErrorMsg = $('.post_error_message');
+			postErrorMsg.hide();
 			axios
 				.get(url)
 				.then(function (response) {
-					self.likes = response.data.likes;
+					if (type === 'post') {
+						$('#post-likes-'+id+'').text(response.data.likes);
+					} else {
+						$('#comment-likes-'+id+'').text(response.data.likes);
+					}
 				})
+				.catch(function (err) {
+					$(postErrorMsg).text(err.response.data.error_message);
+					$(postErrorMsg).show();
+				});
 
 		},
 		buyPack: function (id) {

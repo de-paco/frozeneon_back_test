@@ -4,6 +4,7 @@ namespace Model;
 use App;
 use Exception;
 use http\Client\Curl\User;
+use Services\LoginService;
 use stdClass;
 use System\Emerald\Emerald_model;
 
@@ -16,17 +17,20 @@ use System\Emerald\Emerald_model;
 class User_model extends Emerald_model {
     const CLASS_TABLE = 'user';
 
-
     /** @var string */
     protected $email;
-    /** @var string */
-    protected $password;
     /** @var string */
     protected $personaname;
     /** @var string */
     protected $profileurl;
     /** @var string */
     protected $avatarfull;
+    /** @var string */
+    protected $password_hash;
+    /** @var string */
+    protected $session_login_hash;
+    /** @var string */
+    protected $time_last_login;
     /** @var int */
     protected $rights;
     /** @var int */
@@ -65,25 +69,6 @@ class User_model extends Emerald_model {
     }
 
     /**
-     * @return string|null
-     */
-    public function get_password(): ?string
-    {
-        return $this->password;
-    }
-
-    /**
-     * @param string $password
-     *
-     * @return bool
-     */
-    public function set_password(string $password):bool
-    {
-        $this->password = $password;
-        return $this->save('password', $password);
-    }
-
-    /**
      * @return string
      */
     public function get_personaname(): string
@@ -108,6 +93,39 @@ class User_model extends Emerald_model {
     public function get_avatarfull(): string
     {
         return $this->avatarfull;
+    }
+
+    public function get_password_hash()
+    {
+        return $this->password_hash;
+    }
+
+    /**
+     * @return string
+     */
+    public function get_session_login_hash(): string
+    {
+        return $this->session_login_hash;
+    }
+
+    public function get_time_last_login()
+    {
+        return $this->time_last_login;
+    }
+
+    /**
+     * @return string
+     */
+    public function set_time_last_login(string $time): string
+    {
+        $this->time_last_login = $time;
+        return $this->save('time_last_login', $time);
+    }
+
+    public function set_session_login_hash(string $hash)
+    {
+        $this->session_login_hash = $hash;
+        $this->save('session_login_hash', $hash);
     }
 
     /**
@@ -340,13 +358,46 @@ class User_model extends Emerald_model {
     }
 
     /**
+     * @param $email
+     * @return User_model|null
+     */
+    public static function find_user_by_email($email)
+    {
+        $userData = App::get_s()->from(self::CLASS_TABLE)->where(['email' => $email])->one();
+        if (empty($userData)) {
+            return null;
+        }
+        return static::transform_one($userData);
+    }
+
+    /**
      * @param string $email
      *
      * @return User_model
      */
-    public static function find_user_by_email(string $email): User_model
+    public static function find_user_by_id(int $id): User_model
     {
-        // TODO: task 1, аутентификация
+        $userData = App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
+
+        return static::transform_one($userData);
+    }
+
+    /**
+     * @param int $id
+     * @return array
+     */
+    public static function getOneById(int $id): array
+    {
+        return App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
+    }
+
+    /**
+     * @param int $id
+     * @return array
+     */
+    public static function getUserDataByUserId(int $id): array
+    {
+        return App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
     }
 
     /**
@@ -359,15 +410,55 @@ class User_model extends Emerald_model {
     }
 
     /**
-     * @return bool
+     * Getting id from session
+     * @return integer|null
+     */
+    public static function get_session_hash()
+    {
+        return App::get_ci()->session->tempdata('session_login_hash');
+    }
+
+    /**
+     * @param $hash
+     * @param $userId
+     * @return array|false
+     */
+    private static function validateSessionLoginHash($hash, $userId)
+    {
+        $user = User_model::find_user_by_id($userId);
+
+        if (empty($user)) {
+            return false;
+        }
+
+        $lastTimeLogin = $user->get_time_last_login();
+
+        $existHash = LoginService::getSessionLoginHash($user, $lastTimeLogin);
+
+        if ($existHash !== $hash) {
+            return false;
+        }
+
+        // выставляем время жизни логина в 15 минут
+        if (time() - (int)$lastTimeLogin > 60 * 15) {
+            App::get_ci()->session->unset_userdata('id');
+            App::get_ci()->session->unset_tempdata('session_login_hash');
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return mixed
      */
     public static function is_logged()
     {
         $steam_id = intval(self::get_session_id());
-        return $steam_id > 0;
+        $hash = self::get_session_hash();
+
+        return self::validateSessionLoginHash($hash, $steam_id);
     }
-
-
 
     /**
      * Returns current user or empty model

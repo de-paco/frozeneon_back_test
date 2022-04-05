@@ -4,6 +4,7 @@ namespace Model;
 
 use App;
 use Exception;
+use http\Client\Curl\User;
 use stdClass;
 use System\Emerald\Emerald_model;
 
@@ -152,10 +153,7 @@ class Comment_model extends Emerald_Model {
         return $this->save('likes', $likes);
     }
 
-    /**
-     * @return Int
-     */
-    public function get_reply_id(): int
+    public function get_reply_id()
     {
         return $this->reply_id;
     }
@@ -227,25 +225,62 @@ class Comment_model extends Emerald_Model {
         return App::get_s()->is_affected();
     }
 
-    /**
-     * @param int $assign_id
-     * @return self[]
-     * @throws Exception
-     */
-    public static function get_all_by_assign_id(int $assign_id): array
+    public static function checkIfExist($commentId)
     {
-        return static::transform_many(App::get_s()->from(self::CLASS_TABLE)->where(['assign_id' => $assign_id])->orderBy('time_created', 'ASC')->many());
+        return App::get_s()->from(self::CLASS_TABLE)->where(['id' => $commentId])->orderBy('time_created', 'ASC')->one() ?? null;
     }
 
     /**
-     * @param User_model $user
-     *
+     * @param int $postId
+     * @return array
+     */
+    public static function getAllByPostId(int $postId): array
+    {
+        $data = [];
+
+        $items = App::get_s()->from(self::CLASS_TABLE)->where(['assign_id' => $postId])->orderBy('time_created', 'ASC')->many();
+        if (!empty($items)) {
+            foreach ($items as $item) {
+                $item['user'] = User_model::getOneById($item['user_id']);
+                $data[] = $item;
+            }
+        }
+
+        return $data;
+    }
+
+    public static function getOneById(int $id)
+    {
+        $data = App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
+        return static::transform_one($data);
+    }
+
+    public static function createNew(int $postId, string $commentText): stdClass
+    {
+        $comment = Comment_model::create([
+            'user_id' => User_model::get_user()->get_id(),
+            'assign_id' => $postId,
+            'text' => $commentText,
+            'likes' => 0,
+        ]);
+
+        return Comment_model::preparation($comment);
+    }
+
+
+
+    /**
+     * @param $commentId
      * @return bool
      * @throws Exception
      */
-    public function increment_likes(User_model $user): bool
+    public function increment_likes($commentId): bool
     {
-        // TODO: task 3, лайк комментария
+        App::get_s()->from(self::get_table())->where(['id' => $commentId])
+            ->update(sprintf('likes = likes + %s', App::get_s()->quote(1)))
+            ->execute();
+
+        return App::get_s()->is_affected();
     }
 
     public static function get_all_by_replay_id(int $reply_id)

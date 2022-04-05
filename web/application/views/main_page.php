@@ -130,15 +130,15 @@ use Model\User_model;
         <div class="modal-body">
           <form>
             <div class="form-group">
-              <label for="exampleInputEmail1">Please enter login</label>
-              <input type="email" class="form-control" id="inputEmail" aria-describedby="emailHelp" v-model="login" required>
+              <label for="exampleInputEmail1">Please enter email</label>
+              <input autocomplete="on" type="email" class="form-control" id="inputEmail" aria-describedby="emailHelp" v-model="login" required>
               <div class="invalid-feedback" v-if="invalidLogin">
                 Please write a username.
               </div>
             </div>
             <div class="form-group">
               <label for="exampleInputPassword1">Please enter password</label>
-              <input type="password" class="form-control" id="inputPassword" v-model="pass" required>
+              <input autocomplete="on" type="password" class="form-control" id="inputPassword" v-model="pass" required>
               <div class="invalid-feedback" v-show="invalidPass">
                 Please write a password.
               </div>
@@ -178,7 +178,7 @@ use Model\User_model;
                       <path fill-rule="evenodd" d="M8 2.748l-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 01.176-.17C12.72-3.042 23.333 4.867 8 15z" clip-rule="evenodd"/>
                     </svg>
                   </div>
-                  <span>{{post.likes}}</span>
+                  <span :id="'post-likes-' + post.id">{{post.likes}}</span>
                 </div>
                 <div class="heart-wrap" v-else>
                   <div class="heart">
@@ -192,22 +192,25 @@ use Model\User_model;
               <p class="card-text" v-for="comment in post.coments">
                   {{comment.user.personaname + ' - '}}
                   <small class="text-muted">{{comment.text}}</small>
-                  <a role="button" @click="addLike('comment', comment.id)">
+                  <a style="cursor: pointer;" role="button" @click="addLike('comment', comment.id)">
                       <svg class="bi bi-heart-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                           <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z" clip-rule="evenodd"/>
                       </svg>
-                      {{ comment.likes }}
+                      <span :id="'comment-likes-' + comment.id">{{ comment.likes }}</span>
                   </a>
               </p>
-              <form class="form-inline">
-                <div class="form-group">
-                  <input type="text" class="form-control" id="addComment" v-model="commentText">
-                </div>
-                <button type="button" class="btn btn-primary" @click="addComment(post.id)">Add comment</button>
-              </form>
+                <? if (User_model::is_logged()) {?>
+                    <form class="form-inline">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="addComment" v-model="commentText">
+                        </div>
+                        <button type="button" class="btn btn-primary" @click="addComment(post.id)">Add comment</button>
+                    </form>
+                <? } ?>
             </div>
           </div>
         </div>
+          <div class="post_error_message" style="color: red;text-align: center;padding-bottom: 25px;font-size: 22px;"></div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
         </div>

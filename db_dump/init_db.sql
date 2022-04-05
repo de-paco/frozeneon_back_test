@@ -111,7 +111,6 @@ INSERT INTO `items` (`id`, `name`, `price`) VALUES
 CREATE TABLE `user` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `email` varchar(60) DEFAULT NULL,
-  `password` varchar(32) DEFAULT NULL,
   `personaname` varchar(50) NOT NULL DEFAULT '',
   `avatarfull` varchar(150) NOT NULL DEFAULT '',
   `rights` tinyint(4) NOT NULL DEFAULT '0',
@@ -119,15 +118,18 @@ CREATE TABLE `user` (
   `wallet_balance` decimal(10,2) NOT NULL DEFAULT '0.00',
   `wallet_total_refilled` decimal(10,2) NOT NULL DEFAULT '0.00',
   `wallet_total_withdrawn` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `password_hash` text NOT NULL,
+  `session_login_hash` text,
+  `time_last_login` text,
   `time_created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `time_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 
 
-INSERT INTO `user` (`id`, `email`, `password`, `personaname`, `avatarfull`, `rights`, `likes_balance`, `wallet_balance`, `wallet_total_refilled`, `wallet_total_withdrawn`) VALUES
-(1, 'admin@admin.pl', '12345', 'Admin User', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/96/967871835afdb29f131325125d4395d55386c07a_full.jpg', 0, 0, 0, 0, 0),
-(2, 'user@user.pl', '123', 'User #1', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/86/86a0c845038332896455a566a1f805660a13609b_full.jpg', 0, 0, 0, 0, 0);
+INSERT INTO `user` (`id`, `email`, `personaname`, `avatarfull`, `rights`, `likes_balance`, `wallet_balance`, `wallet_total_refilled`, `wallet_total_withdrawn`, `password_hash`, `session_login_hash`, `time_last_login`) VALUES
+(1, 'admin@admin.pl', 'Admin User', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/96/967871835afdb29f131325125d4395d55386c07a_full.jpg', 0, 100, 0, 0, 0, '9039c5aed891fd91383bef4fd220a727', null, null),
+(2, 'user@user.pl', 'User #1', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/86/86a0c845038332896455a566a1f805660a13609b_full.jpg', 0, 0, 0, 0, 0, 'ffe20c4683b351be716b43d7efdafb5e', null, null);
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

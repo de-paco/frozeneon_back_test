@@ -154,6 +154,27 @@ class Post_model extends Emerald_Model
        // TODO: task 2, комментирование
     }
 
+    public static function checkIfExist(int $id)
+    {
+        return !empty(App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one());
+    }
+
+    public static function getOneById(int $id)
+    {
+        return App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
+    }
+
+    public static function get_full_by_id(int $id)
+    {
+        $post = (new Post_model())->set(App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one());
+        return static::_preparation_full_info($post);
+    }
+
+    public static function get_by_id(int $id): Post_model
+    {
+        return (new Post_model())->set_id($id)->reload();
+    }
+
     /**
      * @return User_model
      */
@@ -208,16 +229,18 @@ class Post_model extends Emerald_Model
     }
 
     /**
-     * @param User_model $user
-     *
+     * @param $postId
      * @return bool
      * @throws Exception
      */
-    public function increment_likes(User_model $user): bool
+    public function increment_likes($postId): bool
     {
-        // TODO: task 3, лайк поста
-    }
+        App::get_s()->from(self::get_table())->where(['id' => $postId])
+            ->update(sprintf('likes = likes + %s', App::get_s()->quote(1)))
+            ->execute();
 
+        return App::get_s()->is_affected();
+    }
 
     /**
      * @param Post_model $data

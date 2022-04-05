@@ -365,8 +365,8 @@ $config['encryption_key'] = '';
 $config['sess_driver'] = 'files';
 $config['sess_cookie_name'] = 'my_session';
 $config['sess_expiration'] = 3600;
-$config['sess_save_path'] = APPPATH.'cache'.DIRECTORY_SEPARATOR .'session';
-$config['sess_match_ip'] = TRUE;
+$config['sess_save_path'] = APPPATH.'cache'.DIRECTORY_SEPARATOR .'sessions';
+$config['sess_match_ip'] = FALSE;
 $config['sess_time_to_update'] = 600;
 $config['sess_regenerate_destroy'] = FALSE;
 

@@ -4,7 +4,11 @@ namespace Model;
 
 use App;
 use Exception;
+use http\Client\Curl\User;
+use Services\LoginService;
 use System\Core\CI_Model;
+
+require_once(dirname(__FILE__). '/../services/LoginService.php');
 
 class Login_model extends CI_Model {
 
@@ -17,27 +21,30 @@ class Login_model extends CI_Model {
     public static function logout()
     {
         App::get_ci()->session->unset_userdata('id');
+        App::get_ci()->session->unset_tempdata('session_login_hash');
     }
 
     /**
-     * @return User_model
+     * @param User_model $user
+     * @return void
      * @throws Exception
      */
-    public static function login(): User_model
+    public static function login(User_model $user)
     {
-        // TODO: task 1, аутентификация
-
-        self::start_session();
+        $user = LoginService::auth($user);
+        self::start_session($user);
     }
 
-    public static function start_session(int $user_id)
+    public static function start_session(User_model $user)
     {
         // если перенедан пользователь
-        if (empty($user_id))
+        if (empty($user))
         {
-            throw new Exception('No id provided!');
+            throw new Exception('No user provided!');
         }
 
-        App::get_ci()->session->set_userdata('id', $user_id);
+        #App::get_ci()->session->set_userdata('session_login_hash', $user->get_session_login_hash());
+        App::get_ci()->session->set_userdata(['id' => $user->get_id()]);
+        App::get_ci()->session->set_tempdata('session_login_hash', $user->get_session_login_hash());
     }
 }
