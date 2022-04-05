@@ -58,6 +58,8 @@ class Main_page extends MY_Controller
     public function logout()
     {
         Login_model::logout();
+
+        return $this->response_success();
     }
 
     public function comment()
@@ -83,8 +85,7 @@ class Main_page extends MY_Controller
     public function like_comment(int $comment_id)
     {
         // Check user is authorize
-        if ( ! User_model::is_logged())
-        {
+        if (!User_model::is_logged()) {
             return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
         }
 
