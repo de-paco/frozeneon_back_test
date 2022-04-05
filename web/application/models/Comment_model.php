@@ -237,6 +237,19 @@ class Comment_model extends Emerald_Model {
         return static::transform_many(App::get_s()->from(self::CLASS_TABLE)->where(['assign_id' => $assign_id])->orderBy('time_created', 'ASC')->many());
     }
 
+    public static function add_comment_to_post(int $post_id, string $comment_text, int $reply_id = null)
+    {
+        $data = [
+            'user_id' => User_model::get_user()->get_id(),
+            'assign_id' => $post_id,
+            'text' => $comment_text,
+            'reply_id' => $reply_id,
+            'likes' => 0,
+        ];
+
+        return static::create($data);
+    }
+
     /**
      * @param User_model $user
      *
@@ -245,12 +258,41 @@ class Comment_model extends Emerald_Model {
      */
     public function increment_likes(User_model $user): bool
     {
-        // TODO: task 3, лайк комментария
+        if (!$user->has_valid_likes_balance()) {
+            throw new Exception('User has invalid likes balance');
+        }
+
+        App::get_s()->start_trans();
+
+        try {
+            $this->set_likes($this->get_likes() + 1);
+
+            if (!$user->decrement_likes()) {
+                App::get_s()->rollback();
+                return false;
+            }
+
+            App::get_s()->commit();
+        } catch (\Throwable $e) {
+            App::get_s()->rollback();
+            return false;
+        }
+
+        return true;
     }
 
-    public static function get_all_by_replay_id(int $reply_id)
+    public static function get_all_by_replay_id(int $reply_id, int $assign_id)
     {
-        // TODO task 2, дополнительно, вложенность комментариев
+        return static::transform_many(App::get_s()->from(self::CLASS_TABLE)->where(['reply_id' => $reply_id, 'assign_id' => $assign_id])->orderBy('time_created', 'ASC')->many());
+    }
+
+    /**
+     * @param int $id
+     * @return self
+     */
+    public static function get_one_by_id(int $id): self
+    {
+        return static::transform_one(App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one());
     }
 
     /**

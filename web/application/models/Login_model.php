@@ -23,11 +23,17 @@ class Login_model extends CI_Model {
      * @return User_model
      * @throws Exception
      */
-    public static function login(): User_model
+    public static function login(string $email, string $password): User_model
     {
-        // TODO: task 1, аутентификация
+        $user_model = User_model::find_user_by_email($email);
 
-        self::start_session();
+        if ($user_model->get_password() !== $password) {
+            throw new Exception('Invalid credentials');
+        }
+
+        self::start_session($user_model->get_id());
+
+        return $user_model;
     }
 
     public static function start_session(int $user_id)

@@ -151,7 +151,9 @@ class Post_model extends Emerald_Model
      */
     public function get_comments():array
     {
-       // TODO: task 2, комментирование
+        $this->is_loaded(TRUE);
+
+       return Comment_model::get_all_by_assign_id($this->get_id());
     }
 
     /**
@@ -208,6 +210,15 @@ class Post_model extends Emerald_Model
     }
 
     /**
+     * @param int $id
+     * @return self
+     */
+    public static function get_one_by_id(int $id): self
+    {
+        return static::transform_one(App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one());
+    }
+
+    /**
      * @param User_model $user
      *
      * @return bool
@@ -215,7 +226,27 @@ class Post_model extends Emerald_Model
      */
     public function increment_likes(User_model $user): bool
     {
-        // TODO: task 3, лайк поста
+        if (!$user->has_valid_likes_balance()) {
+            throw new Exception('User has invalid likes balance');
+        }
+
+        App::get_s()->start_trans();
+
+        try {
+            $this->set_likes($this->get_likes() + 1);
+
+            if (!$user->decrement_likes()) {
+                App::get_s()->rollback();
+                return false;
+            }
+
+            App::get_s()->commit();
+        } catch (\Throwable $e) {
+            App::get_s()->rollback();
+            return false;
+        }
+
+        return true;
     }
 
 

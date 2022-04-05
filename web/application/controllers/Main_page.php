@@ -1,6 +1,8 @@
 <?php
 
 use Model\Boosterpack_model;
+use Model\Comment_model;
+use Model\Login_model;
 use Model\Post_model;
 use Model\User_model;
 
@@ -45,41 +47,98 @@ class Main_page extends MY_Controller
 
     public function login()
     {
-        // TODO: task 1, аутентификация
+        $login = (string) App::get_ci()->input->post('login');
+        $password = (string) App::get_ci()->input->post('password');
 
-        return $this->response_success();
+        $user = Login_model::login($login, $password);
+
+        return $this->response_success(['user' => User_model::preparation($user, 'main_page')]);
     }
 
     public function logout()
     {
-        // TODO: task 1, аутентификация
+        Login_model::logout();
     }
 
     public function comment()
     {
-        // TODO: task 2, комментирование
+        // Check user is authorize
+        if (!User_model::is_logged()) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
+        }
+
+        $post_id = (int) App::get_ci()->input->post('postId');
+        $comment_text = (string) App::get_ci()->input->post('commentText');
+        $reply_id = (int) App::get_ci()->input->post('replyId');
+
+        if (!$reply_id) {
+            $reply_id = null;
+        }
+
+        $comment = Comment_model::add_comment_to_post($post_id, $comment_text, $reply_id);
+
+        return $this->response_success(['comment' => Comment_model::preparation($comment)]);
     }
 
     public function like_comment(int $comment_id)
     {
-        // TODO: task 3, лайк комментария
+        // Check user is authorize
+        if ( ! User_model::is_logged())
+        {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
+        }
+
+        $user = User_model::get_user();
+
+        $comment = Comment_model::get_one_by_id($comment_id);
+
+        if (!$comment->increment_likes($user)) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_INTERNAL_ERROR);
+        }
+
+        return $this->response_success(['likes' => $comment->get_likes()]);
     }
 
     public function like_post(int $post_id)
     {
-        // TODO: task 3, лайк поста
+        // Check user is authorize
+        if (!User_model::is_logged()) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
+        }
+
+        $post = Post_model::get_one_by_id($post_id);
+
+        $user = User_model::get_user();
+
+        if (!$post->increment_likes($user)) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_INTERNAL_ERROR);
+        }
+
+        return $this->response_success(['likes' => $post->get_likes()]);
     }
 
     public function add_money()
     {
-        // TODO: task 4, пополнение баланса
+        // Check user is authorize
+        if (!User_model::is_logged()) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
+        }
 
-        $sum = (float)App::get_ci()->input->post('sum');
+        $sum = (float) App::get_ci()->input->post('sum');
 
+        $user = User_model::get_user();
+
+        if (!$user->add_money($sum)) {
+            return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_INTERNAL_ERROR);
+        }
+
+        return $this->response_success();
     }
 
     public function get_post(int $post_id) {
-        // TODO получения поста по id
+        $post = Post_model::get_one_by_id($post_id);
+
+        return $this->response_success(['post' => Post_model::preparation($post, 'full_info')]);
     }
 
     public function buy_boosterpack()
