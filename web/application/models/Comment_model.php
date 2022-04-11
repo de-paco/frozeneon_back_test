@@ -13,7 +13,8 @@ use System\Emerald\Emerald_model;
  * Date: 27.01.2020
  * Time: 10:10
  */
-class Comment_model extends Emerald_Model {
+class Comment_model extends Emerald_model
+{
     const CLASS_TABLE = 'comment';
 
 
@@ -187,13 +188,10 @@ class Comment_model extends Emerald_Model {
     {
         $this->is_loaded(TRUE);
 
-        if (empty($this->user))
-        {
-            try
-            {
+        if (empty($this->user)) {
+            try {
                 $this->user = new User_model($this->get_user_id());
-            } catch (Exception $exception)
-            {
+            } catch (Exception $exception) {
                 $this->user = new User_model();
             }
         }
@@ -234,7 +232,37 @@ class Comment_model extends Emerald_Model {
      */
     public static function get_all_by_assign_id(int $assign_id): array
     {
-        return static::transform_many(App::get_s()->from(self::CLASS_TABLE)->where(['assign_id' => $assign_id])->orderBy('time_created', 'ASC')->many());
+        return static::transform_many(App::get_s()
+            ->from(self::CLASS_TABLE)
+            ->where(['assign_id' => $assign_id])
+            ->orderBy('time_created', 'ASC')
+            ->many()
+        );
+    }
+
+    public static function add_comment(User_model $user, Post_model $post, string $comment_text): Comment_model
+    {
+        $comment = [
+            'user_id' => $user->get_id(),
+            'assign_id' => $post->get_id(),
+            'text' => $comment_text,
+            'likes' => 0,
+        ];
+
+        return Comment_model::create($comment);
+    }
+
+    /**
+     * @return Comment_model
+     * @throws Exception
+     */
+    public static function find_by_id(int $comment_id): Comment_model
+    {
+        $comment = App::get_s()->from(self::CLASS_TABLE)
+            ->where(['id' => $comment_id])
+            ->one();
+
+        return self::transform_one($comment);
     }
 
     /**
@@ -245,12 +273,33 @@ class Comment_model extends Emerald_Model {
      */
     public function increment_likes(User_model $user): bool
     {
-        // TODO: task 3, лайк комментария
+        if ($user->get_likes_balance() <= 0) {
+            return false;
+        }
+
+        $user->decrement_likes();
+
+        App::get_s()->from(self::get_table())
+            ->where(['id' => $this->get_id()])
+            ->update(sprintf('likes = likes + %s', App::get_s()->quote(1)))
+            ->execute();
+
+        if (!App::get_s()->is_affected()) {
+            return FALSE;
+        }
+
+        return TRUE;
     }
 
     public static function get_all_by_replay_id(int $reply_id)
     {
-        // TODO task 2, дополнительно, вложенность комментариев
+        // task 2, дополнительно, вложенность комментариев
+        return static::transform_many(App::get_s()
+            ->from(self::CLASS_TABLE)
+            ->where(['reply_id' => $reply_id])
+            ->orderBy('time_created', 'ASC')
+            ->many()
+        );
     }
 
     /**
@@ -261,8 +310,7 @@ class Comment_model extends Emerald_Model {
      */
     public static function preparation(Comment_model $data, string $preparation = 'default')
     {
-        switch ($preparation)
-        {
+        switch ($preparation) {
             case 'default':
                 return self::_preparation_default($data);
             default:

@@ -4,6 +4,7 @@ namespace Model;
 
 use App;
 use Exception;
+use Library\exceptions\AuthException;
 use System\Core\CI_Model;
 
 class Login_model extends CI_Model {
@@ -11,7 +12,6 @@ class Login_model extends CI_Model {
     public function __construct()
     {
         parent::__construct();
-
     }
 
     public static function logout()
@@ -23,11 +23,19 @@ class Login_model extends CI_Model {
      * @return User_model
      * @throws Exception
      */
-    public static function login(): User_model
+    public static function login(string $email, string $password): User_model
     {
-        // TODO: task 1, аутентификация
+        // task 1, аутентификация
+        $user = User_model::find_user_by_email($email);
+        $user->is_loaded(TRUE);
 
-        self::start_session();
+        if (!password_verify($password, $user->get_password())) {
+            throw new AuthException('Wrong email or password');
+        }
+
+        self::start_session($user->get_id());
+
+        return $user;
     }
 
     public static function start_session(int $user_id)

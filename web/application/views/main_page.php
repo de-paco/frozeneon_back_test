@@ -26,29 +26,34 @@ use Model\User_model;
       </button>
       <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
         <li class="nav-item">
-            <? if (User_model::is_logged()) {?>
-              <a href="/main_page/logout" class="btn btn-primary my-2 my-sm-0"
-                 data-target="#loginModal">Log out, <?= $user->personaname?>
-              </a>
-            <? } else {?>
-              <button type="button" class="btn btn-success my-2 my-sm-0" type="submit" data-toggle="modal"
+            <?php if (User_model::is_logged()) {?>
+              <button type="button" class="btn btn-primary my-2 my-sm-0" @click="logout">Log out, <?= $user->personaname?>
+              </button>
+            <?php } else {?>
+              <button class="btn btn-success my-2 my-sm-0" type="submit" data-toggle="modal"
                       data-target="#loginModal">Log IN
               </button>
-            <? } ?>
+            <?php } ?>
         </li>
         <li class="nav-item">
-            <?  if (User_model::is_logged()) {?>
-              <button type="button" class="btn btn-success my-2 my-sm-0" type="submit" data-toggle="modal"
+            <?php  if (User_model::is_logged()) {?>
+              <button class="btn btn-success my-2 my-sm-0" type="submit" data-toggle="modal"
                       data-target="#addModal">Add balance
               </button>
-            <? }?>
+            <?php }?>
         </li>
         <li class="nav-item">
-            <?  if (User_model::is_logged()) {?>
-                <a href="" role="button">
-                    Likes:
-                </a>
-            <? }?>
+            <?php  if (User_model::is_logged()) {?>
+                <span role="button" style="color: white">
+                    Likes: {{amount}}
+                </span>
+            <?php }?>
+
+           <?php  if (User_model::is_logged()) {?>
+                <span role="button" style="color: white">
+                    Money: {{money}}
+                </span>
+            <?php }?>
         </li>
       </div>
 <!--      <div class="collapse navbar-collapse" id="navbarTogglerDemo01">-->
@@ -97,7 +102,7 @@ use Model\User_model;
               <div class="card">
                 <img :src="'/images/box.png'" class="card-img-top" alt="Photo">
                 <div class="card-body">
-                  <button type="button" class="btn btn-outline-success my-2 my-sm-0" @click="buyPack(boosterpack.id)">Buy boosterpack {{boosterpack.price}}$
+                  <button type="button" class="btn btn-outline-success my-2 my-sm-0" @click="boosterpackInfo(boosterpack.id)">Show boosterpack {{boosterpack.price}}$
                   </button>
                 </div>
               </div>
@@ -105,14 +110,14 @@ use Model\User_model;
           </div>
         </div>
       </div>
-      If You need some help about core - read README.MD in system folder
-      <br>
-      What we have done All posts: <a href="/main_page/get_all_posts">/main_page/get_all_posts</a> One post: <a
-          href="/main_page/get_post/1">/main_page/get_post/1</a>
-      <br>
-      Just go coding Login: <a href="/main_page/login">/main_page/login</a> Make boosterpack feature <a
-          href="/main_page/buy_boosterpack">/main_page/buy_boosterpack</a> Add money feature <a
-          href="/main_page/add_money">/main_page/add_money</a>
+<!--      If You need some help about core - read README.MD in system folder-->
+<!--      <br>-->
+<!--      What we have done All posts: <a href="/main_page/get_all_posts">/main_page/get_all_posts</a> One post: <a-->
+<!--          href="/main_page/get_post/1">/main_page/get_post/1</a>-->
+<!--      <br>-->
+<!--      Just go coding Login: <a href="/auth/login">/main_page/login</a> Make boosterpack feature <a-->
+<!--          href="/main_page/buy_boosterpack">/main_page/buy_boosterpack</a> Add money feature <a-->
+<!--          href="/main_page/add_money">/main_page/add_money</a>-->
     </div>
   </div>
 
@@ -199,12 +204,17 @@ use Model\User_model;
                       {{ comment.likes }}
                   </a>
               </p>
-              <form class="form-inline">
-                <div class="form-group">
-                  <input type="text" class="form-control" id="addComment" v-model="commentText">
-                </div>
-                <button type="button" class="btn btn-primary" @click="addComment(post.id)">Add comment</button>
-              </form>
+                <?php if (User_model::is_logged()) { ?>
+                    <form class="form-inline">
+
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="addComment" v-model="commentText">
+                        </div>
+                        <button type="button" class="btn btn-primary" @click="addComment(post.id)">Add comment</button>
+                    </form>
+                <?php } else { ?>
+                    <span> Log in for add a comment</span>
+                <?php } ?>
             </div>
           </div>
         </div>
@@ -244,20 +254,60 @@ use Model\User_model;
   </div>
   <!-- Modal -->
   <div class="modal fade" id="amountModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-       aria-hidden="true">
+       aria-hidden="true" v-if="buy_boosterpack_item">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel">Amount</h5>
+          <h5 class="modal-title" id="exampleModalLabel">You got</h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
         <div class="modal-body">
-          <h2 class="text-center">Likes: {{amount}}</h2>
+          <h2 class="text-center">From Boosterpack {{ buy_boosterpack.price }}$</h2>
+        </div>
+        <div class="modal-body">
+          <h2 class="text-center">{{ buy_boosterpack_item.name }}</h2>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-success" data-dismiss="modal">Ok</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="boosterpackModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+       aria-hidden="true" v-if="boosterpack_one">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Boosterpack {{boosterpack_one.price}}$ </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+          <div class="modal-body">
+              <div class="row">
+                  <div class="col-4" v-for="boosterpack_item in boosterpack_items" v-if="boosterpack_items">
+                      <div class="card">
+                          <img :src="'/images/box.png'" class="card-img-top" alt="Photo">
+                          <div class="card-body">{{ boosterpack_item.name }}
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+          </div>
+          <div class="modal-footer">
+               <?php if (User_model::is_logged()) {?>
+                   <button type="button" class="btn btn-outline-success my-2 my-sm-0"
+                           @click="buyPack(boosterpack_one.id)">
+                       Buy boosterpack {{boosterpack_one.price}}$
+                   </button>
+               <?php } else { ?>
+                   <span>Login for buy boosterpack</span>
+               <?php } ?>
         </div>
       </div>
     </div>
@@ -273,6 +323,11 @@ use Model\User_model;
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
         integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
         crossorigin="anonymous"></script>
+
+<script>
+    const amount = <?= $user->likes_balance ?? 0 ?>;
+    const money = <?= $user->wallet_balance ?? 0 ?>;
+</script>
 <script src="/js/app.js?v=<?= filemtime(FCPATH . '/js/app.js') ?>"></script>
 </body>
 </html>

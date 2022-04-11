@@ -3,6 +3,7 @@ namespace Model;
 
 use App;
 use Exception;
+use Library\exceptions\OpenBoosterpackException;
 use System\Emerald\Emerald_model;
 use stdClass;
 use ShadowIgniterException;
@@ -129,14 +130,6 @@ class Boosterpack_model extends Emerald_model
 
     //////GENERATE
 
-    /**
-     * @return Boosterpack_info_model[]
-     */
-    public function get_boosterpack_info(): array
-    {
-        // TODO
-    }
-
     function __construct($id = NULL)
     {
         parent::__construct();
@@ -169,11 +162,40 @@ class Boosterpack_model extends Emerald_model
     }
 
     /**
-     * @return int
+     * @return Boosterpack_model
+     * @throws Exception
      */
-    public function open(): int
+    public static function find_by_id(int $id): Boosterpack_model
     {
-        // TODO: task 5, покупка и открытие бустерпака
+        $boosterpack = App::get_s()->from(self::CLASS_TABLE)
+            ->where(['id' => $id])
+            ->one();
+
+        return self::transform_one($boosterpack);
+    }
+
+    /**
+     * @return Item_model
+     */
+    public function open(): Item_model
+    {
+        // task 5, покупка и открытие бустерпака
+
+        $max_item_price = $this->bank + $this->price - $this->us;
+
+        $items = $this->get_contains($max_item_price);
+
+        if (empty($items)) {
+            throw new OpenBoosterpackException();
+        }
+
+        /** @var Item_model $item */
+        $item = random_element($items);
+
+        $bank = $this->bank + $this->price - $this->us - $item->get_price();
+        $this->set_bank((float)$bank);
+
+        return $item;
     }
 
     /**
@@ -183,7 +205,13 @@ class Boosterpack_model extends Emerald_model
      */
     public function get_contains(int $max_available_likes): array
     {
-        // TODO: task 5, покупка и открытие бустерпака
+        $boosterpack_items = Item_model::get_by_boosterpack_id($this->get_id());
+
+        $items = array_filter($boosterpack_items, static function (Item_model $item) use ($max_available_likes) {
+            return $item->get_price() <= $max_available_likes;
+        });
+
+        return $items;
     }
 
 
@@ -199,8 +227,6 @@ class Boosterpack_model extends Emerald_model
         {
             case 'default':
                 return self::_preparation_default($data);
-            case 'contains':
-                return self::_preparation_contains($data);
             default:
                 throw new Exception('undefined preparation type');
         }
@@ -219,16 +245,5 @@ class Boosterpack_model extends Emerald_model
         $o->price = $data->get_price();
 
         return $o;
-    }
-
-
-    /**
-     * @param Boosterpack_model $data
-     *
-     * @return stdClass
-     */
-    private static function _preparation_contains(Boosterpack_model $data): stdClass
-    {
-        // TODO: task 5, покупка и открытие бустерпака
     }
 }

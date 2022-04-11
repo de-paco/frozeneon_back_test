@@ -267,21 +267,93 @@ class User_model extends Emerald_model {
      */
     public function add_money(float $sum): bool
     {
-        // TODO: task 4, добавление денег
+        if ($sum <= 0) {
+            return FALSE;
+        }
+
+        App::get_s()->start_trans()->execute();
+
+        $analytic = [
+            'user_id' => $this->get_id(),
+            'object' => Transaction_object::WALLET,
+            'object_id' => null,
+            'action' => Transaction_action::ADD,
+            'amount' => $sum,
+        ];
+        Analytics_model::create($analytic);
+
+        App::get_s()->from(self::get_table())
+            ->where(['id' => $this->get_id()])
+            ->update(sprintf('wallet_balance = wallet_balance + %s, wallet_total_refilled = wallet_total_refilled + %s', $sum, $sum))
+            ->execute();
+
+        if (!App::get_s()->is_affected()) {
+            App::get_s()->rollback()->execute();
+            return FALSE;
+        }
+
+        App::get_s()->commit()->execute();
 
         return TRUE;
     }
 
-
     /**
-     * @param float $sum
+     * @param Boosterpack_model $boosterpack_model
      *
      * @return bool
      * @throws \ShadowIgniterException
      */
-    public function remove_money(float $sum): bool
+    public function remove_money(Boosterpack_model $boosterpack_model): bool
     {
-        // TODO: task 5, списание денег
+        $sum = $boosterpack_model->get_price();
+        if ($sum <= 0) {
+            return FALSE;
+        }
+
+        $analytic = [
+            'user_id' => $this->get_id(),
+            'object' => Transaction_object::BOOSTERPACK,
+            'object_id' => $boosterpack_model->get_id(),
+            'action' => Transaction_action::SUB,
+            'amount' => $sum,
+        ];
+        Analytics_model::create($analytic);
+
+        App::get_s()->from(self::get_table())
+            ->where(['id' => $this->get_id()])
+            ->update(sprintf('wallet_balance = wallet_balance - %s, wallet_total_withdrawn  = wallet_total_withdrawn  + %s', $sum, $sum))
+            ->execute();
+
+        if (!App::get_s()->is_affected()) {
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+
+    public function add_likes(int $boosterpack_id, int $likes_count): bool
+    {
+        if ($likes_count <= 0) {
+            return FALSE;
+        }
+
+        $analytic = [
+            'user_id' => $this->get_id(),
+            'object' => Transaction_object::LIKE,
+            'object_id' => $boosterpack_id,
+            'action' => Transaction_action::ADD,
+            'amount' => $likes_count,
+        ];
+        Analytics_model::create($analytic);
+
+        App::get_s()->from(self::get_table())
+            ->where(['id' => $this->get_id()])
+            ->update(sprintf('likes_balance = likes_balance + %s', App::get_s()->quote($likes_count)))
+            ->execute();
+
+        if (!App::get_s()->is_affected()) {
+            return FALSE;
+        }
 
         return TRUE;
     }
@@ -292,6 +364,15 @@ class User_model extends Emerald_model {
      */
     public function decrement_likes(): bool
     {
+        $analytic = [
+            'user_id' => $this->get_id(),
+            'object' => Transaction_object::LIKE,
+            'object_id' => null,
+            'action' => Transaction_action::SUB,
+            'amount' => 1,
+        ];
+        Analytics_model::create($analytic);
+
         App::get_s()->from(self::get_table())
             ->where(['id' => $this->get_id()])
             ->update(sprintf('likes_balance = likes_balance - %s', App::get_s()->quote(1)))
@@ -346,7 +427,28 @@ class User_model extends Emerald_model {
      */
     public static function find_user_by_email(string $email): User_model
     {
-        // TODO: task 1, аутентификация
+        // task 1, аутентификация
+        $user = App::get_s()->from(self::CLASS_TABLE)
+            ->where(['email' => $email])
+            ->one();
+
+        return self::transform_one($user);
+    }
+
+    /**
+     * @param int $id
+     *
+     * @return User_model
+     */
+    public static function find_by_id_for_update(int $id): User_model
+    {
+        // task 1, аутентификация
+        $user = App::get_s()->from(self::CLASS_TABLE)
+            ->where(['id' => $id])
+            ->for_update()
+            ->one();
+
+        return self::transform_one($user);
     }
 
     /**
@@ -401,6 +503,8 @@ class User_model extends Emerald_model {
         {
             case 'main_page':
                 return self::_preparation_main_page($data);
+            case 'balance':
+                return self::_preparation_balance($data);
             case 'default':
                 return self::_preparation_default($data);
             default:
@@ -420,6 +524,8 @@ class User_model extends Emerald_model {
 
         $o->personaname = $data->get_personaname();
         $o->avatarfull = $data->get_avatarfull();
+        $o->likes_balance = $data->get_likes_balance();
+        $o->wallet_balance = $data->get_wallet_balance();
 
         $o->time_created = $data->get_time_created();
         $o->time_updated = $data->get_time_updated();
@@ -449,6 +555,22 @@ class User_model extends Emerald_model {
             $o->time_created = $data->get_time_created();
             $o->time_updated = $data->get_time_updated();
         }
+
+        return $o;
+    }
+
+    /**
+     * @param User_model $data
+     * @return stdClass
+     */
+    private static function _preparation_balance(User_model $data)
+    {
+        $o = new stdClass();
+
+        $o->id = $data->get_id();
+
+        $o->likes_balance = $data->get_likes_balance();
+        $o->wallet_balance = $data->get_wallet_balance();
 
         return $o;
     }

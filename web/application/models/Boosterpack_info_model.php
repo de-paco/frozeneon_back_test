@@ -14,15 +14,15 @@ use System\Emerald\Emerald_model;
 class Boosterpack_info_model extends Emerald_model {
     const CLASS_TABLE = 'boosterpack_info';
 
-    /** @var float Цена бустерпака */
+    /** @var int */
     protected $boosterpack_id;
-    /** @var float Банк, который наполняется */
+    /** @var int */
     protected $item_id;
 
     protected $item;
 
     /**
-     * @return float
+     * @return int
      */
     public function get_boosterpack_id(): int
     {
@@ -30,7 +30,7 @@ class Boosterpack_info_model extends Emerald_model {
     }
 
     /**
-     * @param float $boosterpack_id
+     * @param int $boosterpack_id
      *
      * @return bool
      */
@@ -42,7 +42,7 @@ class Boosterpack_info_model extends Emerald_model {
     }
 
     /**
-     * @return float
+     * @return int
      */
     public function get_item_id(): int
     {
@@ -50,7 +50,7 @@ class Boosterpack_info_model extends Emerald_model {
     }
 
     /**
-     * @param float $item_id
+     * @param int $item_id
      *
      * @return bool
      */

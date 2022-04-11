@@ -16,12 +16,14 @@ CREATE TABLE `analytics` (
   `object` varchar(50) NOT NULL,
   `action` varchar(50) NOT NULL,
   `object_id` int(11) DEFAULT NULL,
-  `amount` int(11) DEFAULT NULL,
+  `amount` decimal(10,2) NOT NULL,
   `time_created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `time_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+ALTER TABLE `test_task`.`analytics` ADD INDEX `user_id_index` (`user_id`);
+ALTER TABLE `test_task`.`analytics` ADD INDEX `user_id_index` (`user_id`);
 
 -- --------------------------------------------------------
 CREATE TABLE `boosterpack` (
@@ -51,6 +53,8 @@ CREATE TABLE `comment` (
   `time_updated` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+
+ALTER TABLE `test_task`.`comment` ADD INDEX `assign_id_index` (`assign_id`);
 
 INSERT INTO `comment` (`id`, `user_id`, `assign_id`, `reply_id`, `text`, `likes`) VALUES
 (1, 1, 1, NULL, 'Comment #1', 0),
@@ -106,12 +110,31 @@ INSERT INTO `items` (`id`, `name`, `price`) VALUES
 (11, '200 Likes', 200),
 (12, '500 Likes', 500);
 
+INSERT INTO `boosterpack_info` (`boosterpack_id`, `item_id`) VALUES
+(1, 1),
+(1, 2),
+(1, 3),
+(1, 5),
+(1, 7),
+
+(2, 4),
+(2, 5),
+(2, 6),
+(2, 8),
+(2, 10),
+
+
+(3, 7),
+(3, 8),
+(3, 10),
+(3, 11),
+(3, 12);
 
 -- --------------------------------------------------------
 CREATE TABLE `user` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `email` varchar(60) DEFAULT NULL,
-  `password` varchar(32) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
   `personaname` varchar(50) NOT NULL DEFAULT '',
   `avatarfull` varchar(150) NOT NULL DEFAULT '',
   `rights` tinyint(4) NOT NULL DEFAULT '0',
@@ -126,8 +149,11 @@ CREATE TABLE `user` (
 
 
 INSERT INTO `user` (`id`, `email`, `password`, `personaname`, `avatarfull`, `rights`, `likes_balance`, `wallet_balance`, `wallet_total_refilled`, `wallet_total_withdrawn`) VALUES
-(1, 'admin@admin.pl', '12345', 'Admin User', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/96/967871835afdb29f131325125d4395d55386c07a_full.jpg', 0, 0, 0, 0, 0),
-(2, 'user@user.pl', '123', 'User #1', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/86/86a0c845038332896455a566a1f805660a13609b_full.jpg', 0, 0, 0, 0, 0);
+(1, 'admin@admin.pl', '$2y$10$fWjlUykE/erWZyfm27uaYOxa66pAP.6h6eMmw1qyALgY3hQT54Y8y', 'Admin User', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/96/967871835afdb29f131325125d4395d55386c07a_full.jpg', 0, 0, 0, 0, 0),
+(2, 'user@user.pl', '$2y$10$fflhJotkq4M5KAeuh1w2vu7qFyXYIxf1GqvOCaMTMo5UBDEOqIzWC', 'User #1', 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/86/86a0c845038332896455a566a1f805660a13609b_full.jpg', 0, 0, 0, 0, 0);
+
+/* id 1 password 12345 */
+/* id 2 password 123 */
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

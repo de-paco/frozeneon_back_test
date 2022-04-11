@@ -88,4 +88,49 @@ class Item_model extends Emerald_model {
 
         return App::get_s()->is_affected();
     }
+
+    /**
+     * @param int $boosterpack_id
+     *
+     * @return self[]
+     */
+    public static function get_by_boosterpack_id(int $boosterpack_id): array
+    {
+        $boosterpack_info = Boosterpack_info_model::get_by_boosterpack_id($boosterpack_id);
+        $boosterpack_items = array_map(static function (Boosterpack_info_model $info) {
+            return $info->get_item();
+        }, $boosterpack_info);
+
+        return $boosterpack_items;
+    }
+
+    /**
+     * @param self $data
+     * @param string $preparation
+     * @return stdClass
+     * @throws Exception
+     */
+    public static function preparation(Item_model $data, string $preparation = 'default')
+    {
+        switch ($preparation) {
+            case 'default':
+                return self::_preparation_default($data);
+            default:
+                throw new Exception('undefined preparation type');
+        }
+    }
+
+    /**
+     * @param self $data
+     * @return stdClass
+     */
+    private static function _preparation_default(Item_model $data): stdClass
+    {
+        $o = new stdClass();
+
+        $o->id = $data->get_id();
+        $o->name = $data->get_name();
+
+        return $o;
+    }
 }

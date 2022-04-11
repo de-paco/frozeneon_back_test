@@ -3,7 +3,7 @@ namespace Model;
 use App;
 use System\Emerald\Emerald_model;
 
-class Analytics_model extends Emerald_Model
+class Analytics_model extends Emerald_model
 {
     const CLASS_TABLE = 'analytics';
 

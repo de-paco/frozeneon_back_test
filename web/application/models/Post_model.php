@@ -11,7 +11,7 @@ use System\Emerald\Emerald_model;
  * Date: 27.01.2020
  * Time: 10:10
  */
-class Post_model extends Emerald_Model
+class Post_model extends Emerald_model
 {
     const CLASS_TABLE = 'post';
 
@@ -151,7 +151,8 @@ class Post_model extends Emerald_Model
      */
     public function get_comments():array
     {
-       // TODO: task 2, комментирование
+       // task 2, комментирование
+        return Comment_model::get_all_by_assign_id($this->get_id());
     }
 
     /**
@@ -208,6 +209,19 @@ class Post_model extends Emerald_Model
     }
 
     /**
+     * @return Post_model
+     * @throws Exception
+     */
+    public static function find_by_id(int $postId): Post_model
+    {
+        $post = App::get_s()->from(self::CLASS_TABLE)
+            ->where(['id' => $postId])
+            ->one();
+
+        return self::transform_one($post);
+    }
+
+    /**
      * @param User_model $user
      *
      * @return bool
@@ -215,9 +229,23 @@ class Post_model extends Emerald_Model
      */
     public function increment_likes(User_model $user): bool
     {
-        // TODO: task 3, лайк поста
-    }
+        if ($user->get_likes_balance() <= 0) {
+            return false;
+        }
 
+        $user->decrement_likes();
+
+        App::get_s()->from(self::get_table())
+            ->where(['id' => $this->get_id()])
+            ->update(sprintf('likes = likes + %s', App::get_s()->quote(1)))
+            ->execute();
+
+        if (!App::get_s()->is_affected()) {
+            return FALSE;
+        }
+
+        return TRUE;
+    }
 
     /**
      * @param Post_model $data
