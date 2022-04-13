@@ -11,7 +11,7 @@ use System\Emerald\Emerald_model;
  * Date: 27.01.2020
  * Time: 10:10
  */
-class Post_model extends Emerald_Model
+class Post_model extends Likeable_model
 {
     const CLASS_TABLE = 'post';
 
@@ -151,7 +151,7 @@ class Post_model extends Emerald_Model
      */
     public function get_comments():array
     {
-       // TODO: task 2, комментирование
+       return Comment_model::get_all_by_assign_id($this->get_id());
     }
 
     /**
@@ -205,17 +205,6 @@ class Post_model extends Emerald_Model
     public static function get_all():array
     {
         return static::transform_many(App::get_s()->from(self::CLASS_TABLE)->many());
-    }
-
-    /**
-     * @param User_model $user
-     *
-     * @return bool
-     * @throws Exception
-     */
-    public function increment_likes(User_model $user): bool
-    {
-        // TODO: task 3, лайк поста
     }
 
 

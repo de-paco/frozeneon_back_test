@@ -79,8 +79,10 @@ var app = new Vue({
 				axios.post(
 					'/main_page/comment',
 					comment
-				).then(function () {
-
+				).then(function (response) {
+					if(response.data.comment) {
+						location.reload();
+					}
 				});
 			}
 
