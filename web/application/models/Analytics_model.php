@@ -1,6 +1,8 @@
 <?php
 namespace Model;
 use App;
+use Model\Enum\Transaction_info;
+use Model\Enum\Transaction_type;
 use System\Emerald\Emerald_model;
 
 class Analytics_model extends Emerald_Model
@@ -163,6 +165,28 @@ class Analytics_model extends Emerald_Model
     {
         parent::reload();
         return $this;
+    }
+
+    public static function createFromBoosterpack(Boosterpack_model $item, int $amount, User_model $user)
+    {
+        return self::create([
+            'user_id'   => $user->get_id(),
+            'object'    => Transaction_info::BOOSTERPACK,
+            'action'    => Transaction_type::BUY,
+            'object_id' => $item->get_id(),
+            'amount'    => $amount,
+        ]);
+    }
+
+    public static function createFromTopup(int $amount, User_model $user)
+    {
+        return self::create([
+            'user_id'   => $user->get_id(),
+            'object'    => Transaction_info::WALLET,
+            'action'    => Transaction_type::TOPUP,
+            'object_id' => $user->get_id(),
+            'amount'    => $amount,
+        ]);
     }
 
     public static function create(array $data)

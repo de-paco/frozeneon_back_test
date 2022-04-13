@@ -5,7 +5,6 @@ namespace Model;
 use App;
 use Exception;
 use stdClass;
-use System\Emerald\Emerald_model;
 
 /**
  * Created by PhpStorm.
@@ -13,7 +12,7 @@ use System\Emerald\Emerald_model;
  * Date: 27.01.2020
  * Time: 10:10
  */
-class Comment_model extends Emerald_Model {
+class Comment_model extends Likeable_model {
     const CLASS_TABLE = 'comment';
 
 
@@ -238,19 +237,17 @@ class Comment_model extends Emerald_Model {
     }
 
     /**
-     * @param User_model $user
-     *
-     * @return bool
-     * @throws Exception
+     * @param int $reply_id
+     * @return Comment_model[]
      */
-    public function increment_likes(User_model $user): bool
+    public static function get_all_by_replay_id(int $reply_id): array
     {
-        // TODO: task 3, лайк комментария
-    }
-
-    public static function get_all_by_replay_id(int $reply_id)
-    {
-        // TODO task 2, дополнительно, вложенность комментариев
+        return static::transform_many(App::get_s()
+            ->from(self::CLASS_TABLE)
+            ->where(['reply_id' => $reply_id])
+            ->orderBy('time_created', 'ASC')
+            ->many()
+        );
     }
 
     /**

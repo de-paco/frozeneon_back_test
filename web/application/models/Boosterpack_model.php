@@ -134,7 +134,7 @@ class Boosterpack_model extends Emerald_model
      */
     public function get_boosterpack_info(): array
     {
-        // TODO
+        return Boosterpack_info_model::get_by_boosterpack_id($this->get_id());
     }
 
     function __construct($id = NULL)
@@ -171,9 +171,60 @@ class Boosterpack_model extends Emerald_model
     /**
      * @return int
      */
+    public function get_full_price(): int
+    {
+        return $this->get_bank() + $this->get_price() - $this->get_us();
+    }
+
+    /**
+     * @return int
+     * @throws Exception
+     */
     public function open(): int
     {
-        // TODO: task 5, покупка и открытие бустерпака
+        $items = $this->get_contains($this->get_full_price());
+        $lucky_number = rand(0, count($items) - 1);
+
+        App::get_s()->set_transaction_repeatable_read();
+        App::get_s()->start_trans()->execute();
+
+        $item = $items[$lucky_number];
+
+        try {
+            $user = User_model::get_user();
+            $user->remove_money($this->get_price());
+            if ( ! App::get_s()->is_affected())
+            {
+                App::get_s()->rollback()->execute();
+                return FALSE;
+            }
+            $user->set_likes_balance($user->get_likes_balance() + $item->get_price());
+            if ( ! App::get_s()->is_affected())
+            {
+                App::get_s()->rollback()->execute();
+                return FALSE;
+            }
+            $this->set_bank($this->get_full_price() - $item->get_price());
+            if ( ! App::get_s()->is_affected())
+            {
+                App::get_s()->rollback()->execute();
+                return FALSE;
+            }
+        }
+        catch (Exception $ex)
+        {
+            App::get_s()->rollback()->execute();
+            return FALSE;
+        }
+
+        App::get_s()->commit()->execute();
+
+        Analytics_model::createFromBoosterpack(
+            $this,
+            $item->get_price(),
+            $user
+        );
+        return $item->get_price();
     }
 
     /**
@@ -183,7 +234,17 @@ class Boosterpack_model extends Emerald_model
      */
     public function get_contains(int $max_available_likes): array
     {
-        // TODO: task 5, покупка и открытие бустерпака
+        $res = [];
+        foreach(Boosterpack_info_model::get_by_boosterpack_id($this->get_id()) as $info)
+        {
+            $item = $info->get_item();
+            if ($item->get_price() <= $max_available_likes)
+            {
+                $res[] = $item;
+            }
+        }
+
+        return $res;
     }
 
 
@@ -229,6 +290,22 @@ class Boosterpack_model extends Emerald_model
      */
     private static function _preparation_contains(Boosterpack_model $data): stdClass
     {
-        // TODO: task 5, покупка и открытие бустерпака
+        $o = new stdClass();
+
+        $o->id = $data->get_id();
+        $o->price = $data->get_price();
+
+        $o->items = [];
+        foreach (Boosterpack_info_model::get_by_boosterpack_id($data->get_id()) as $info)
+        {
+            $o->items[] = $info->get_item();
+        }
+        $o->items = Item_model::preparation_many($o->items);
+
+
+        $o->time_created = $data->get_time_created();
+        $o->time_updated = $data->get_time_updated();
+
+        return $o;
     }
 }
