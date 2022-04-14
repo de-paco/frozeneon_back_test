@@ -218,11 +218,37 @@ class Main_page extends MY_Controller
 
     }
 
+    private $servers = ['192.168.0.104'];
+
     public function add_money()
     {
         // TODO: task 4, пополнение баланса
 
-        $sum = (float)App::get_ci()->input->post('sum');
+        // Get sum from request
+        $sum = (float)App::get_ci()->input->get('sum');
+
+        // Check if server is authorised
+        if (!in_array($_SERVER['REMOTE_ADDR'], $this->servers))
+        {
+            return $this->response_error("Server is not authorised");
+        }
+
+        // Check if sum is valid
+        if ($sum <= 0)
+        {
+            return $this->response_error("Sum is invalid");
+        }
+
+        // 
+        if((new User_model)->add_money($sum))
+        {
+            return $this->response_success(["message" => "Wallet was refilled"]);
+        }
+        else
+        {
+            return $this->response_error("Wallet was not refilled");
+        }
+
 
     }
 

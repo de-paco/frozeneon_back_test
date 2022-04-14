@@ -269,7 +269,12 @@ class User_model extends Emerald_model {
     {
         // TODO: task 4, добавление денег
 
-        return TRUE;
+        // Get user id
+        $user = self::get_user()->id;
+
+        App::get_s()->from(self::CLASS_TABLE)->where(['id' => $user])->update(["wallet_total_refilled = wallet_total_refilled + $sum", "wallet_balance = wallet_balance + $sum"])->execute();
+        return App::get_s()->is_affected();
+
     }
 
 
