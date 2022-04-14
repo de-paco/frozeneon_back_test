@@ -3,6 +3,7 @@
 use Model\Boosterpack_model;
 use Model\Post_model;
 use Model\User_model;
+use Model\Login_model;
 
 /**
  * Created by PhpStorm.
@@ -47,12 +48,69 @@ class Main_page extends MY_Controller
     {
         // TODO: task 1, аутентификация
 
-        return $this->response_success();
+        // Get provided data
+        $login = App::get_ci()->input->post('login');
+        $password = App::get_ci()->input->post('password');
+        $redirect = App::get_ci()->input->get('redirect');
+
+        // If user already logged in
+        if (User_model::is_logged())
+        {
+            return $this->response_success(['message' => 'This user already logged in']);
+        }
+
+        // If login or password not provided
+        if(empty($login) || empty($password))
+        {
+            return $this->response_error('Please provide login and password');
+        }
+
+        // Get user data from database
+        $user = User_model::find_user_by_email($login);
+
+        // Chec user exist
+        if($user->get_id() == 0)
+        {
+           return $this->response_error("There is not user with login $login");
+        }
+
+        // Check password
+        if ($user->get_password() != $password)
+        {
+            return $this->response_error("Wrong password");
+        }
+
+        // Authenticate user
+        Login_model::login($user);
+
+        // Redirect user
+        if (!empty($redirect))
+        {
+            header("Location: $redirect");
+            die();
+        }
+
+        // Return success message
+        return $this->response_success(["message" => "You are logged in as $login"]);
     }
 
     public function logout()
     {
         // TODO: task 1, аутентификация
+
+        // Logout user
+        Login_model::logout();
+
+        // Redirect user
+        $redirect = App::get_ci()->input->get('redirect');
+        if (!empty($redirect))
+        {
+            header("Location: $redirect");
+            die();
+        }
+
+        // Return success message
+        return $this->response_success(["message" => "You are logged out"]);
     }
 
     public function comment()
