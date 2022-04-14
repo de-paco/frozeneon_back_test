@@ -214,6 +214,12 @@ class Comment_model extends Emerald_Model {
         return $this;
     }
 
+    public static function exist(int $id)
+    {
+        $comment = App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
+        return (int)$comment['id'];
+    }
+
     public static function create(array $data)
     {
         App::get_s()->from(self::CLASS_TABLE)->insert($data)->execute();
@@ -251,6 +257,9 @@ class Comment_model extends Emerald_Model {
     public static function get_all_by_replay_id(int $reply_id)
     {
         // TODO task 2, дополнительно, вложенность комментариев
+
+        return static::transform_many(App::get_s()->from(self::CLASS_TABLE)->where(['reply_id' => $reply_id])->orderBy('time_created', 'ASC')->many());
+
     }
 
     /**

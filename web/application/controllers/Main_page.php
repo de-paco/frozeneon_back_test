@@ -4,6 +4,7 @@ use Model\Boosterpack_model;
 use Model\Post_model;
 use Model\User_model;
 use Model\Login_model;
+use Model\Comment_model;
 
 /**
  * Created by PhpStorm.
@@ -116,6 +117,57 @@ class Main_page extends MY_Controller
     public function comment()
     {
         // TODO: task 2, комментирование
+
+        // If user is not logged in
+        if (!User_model::is_logged())
+        {
+            return $this->response_error("You are not logged in");
+        }
+
+        // Provided data
+        $user = User_model::get_user()->get_id();
+        $post = App::get_ci()->input->post('post');
+        $text = App::get_ci()->input->post('comment');
+        $reply = App::get_ci()->input->post('reply');
+
+        // Check if post exist
+        if (!is_numeric($post) || Post_model::exist($post) == 0)
+        {
+            return $this->response_error("The post $post doesn't exist");
+        }
+
+        // Check if comment exists
+        if (!empty($reply))
+        {
+            if (!is_numeric($reply) || Comment_model::exist($reply) == 0)
+            {
+                return $this->response_error("The comment $reply doesn't exist");
+            }
+        }
+        else 
+        {
+            $reply = NULL;
+        }
+
+        // Check provided data
+        if (empty($text))
+        {
+            return $this->response_error("Comment can't be empty");
+        }
+
+        // Create comment
+        $comment = Comment_model::create([
+            'user_id' => $user,
+            'assign_id' => $post,
+            'reply_id' => $reply,
+            'text' => $text,
+            'likes' => 0
+        ]);
+        $comment = Comment_model::preparation($comment);
+
+        // Return success message
+        return $this->response_success(["message" => "Comment $comment->id was created."]);
+
     }
 
     public function like_comment(int $comment_id)
