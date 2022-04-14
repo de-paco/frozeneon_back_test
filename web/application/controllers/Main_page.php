@@ -173,11 +173,49 @@ class Main_page extends MY_Controller
     public function like_comment(int $comment_id)
     {
         // TODO: task 3, лайк комментария
+
+        // If user is not logged in
+        if (!User_model::is_logged())
+        {
+            return $this->response_error("You are not logged in");
+        }
+
+        // Check if comment exist
+        if (!is_numeric($comment_id) || Comment_model::exist($comment_id) == 0)
+        {
+            return $this->response_error("The comment $comment_id doesn't exist");
+        }
+
+        // Increment likes and return response
+        if (Comment_model::increment_likes($comment_id))
+        {
+            return $this->response_success("The comment $comment_id was liked");
+        }
+
     }
 
     public function like_post(int $post_id)
     {
         // TODO: task 3, лайк поста
+
+        // If user is not logged in
+        if (!User_model::is_logged())
+        {
+            return $this->response_error("You are not logged in");
+        }
+
+        // Check if post exist
+        if (!is_numeric($post_id) || Post_model::exist($post_id) == 0)
+        {
+            return $this->response_error("The post $post_id doesn't exist");
+        }
+
+        // Increment likes and return response
+        if (Post_model::increment_likes($post_id))
+        {
+            return $this->response_success("The post $post_id was liked");
+        }
+
     }
 
     public function add_money()

@@ -221,9 +221,12 @@ class Post_model extends Emerald_Model
      * @return bool
      * @throws Exception
      */
-    public function increment_likes(User_model $user): bool
+    public function increment_likes(int $id): bool
     {
         // TODO: task 3, лайк поста
+
+        App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->update('likes = likes + 1')->execute();
+        return App::get_s()->is_affected();
     }
 
 
