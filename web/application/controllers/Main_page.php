@@ -252,7 +252,7 @@ class Main_page extends MY_Controller
 
     }
 
-    public function get_post(int $post_id=1) {
+    public function get_post(int $post_id) {
         // TODO получения поста по id
 
         $post = Post_model::preparation_many(Post_model::get_all(), 'full_info');
