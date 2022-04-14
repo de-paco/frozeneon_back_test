@@ -225,7 +225,7 @@ class Main_page extends MY_Controller
         // TODO: task 4, пополнение баланса
 
         // Get sum from request
-        $sum = (float)App::get_ci()->input->get('sum');
+        $sum = (float)App::get_ci()->input->post('sum');
 
         // Check if server is authorised
         if (!in_array($_SERVER['REMOTE_ADDR'], $this->servers))
