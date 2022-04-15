@@ -272,7 +272,10 @@ class User_model extends Emerald_model {
         // Get user id
         $user = self::get_user()->id;
 
+        // Add money to wallet_balance and to wallet_total_refilled
         App::get_s()->from(self::CLASS_TABLE)->where(['id' => $user])->update(["wallet_total_refilled = wallet_total_refilled + $sum", "wallet_balance = wallet_balance + $sum"])->execute();
+
+        // Return result
         return App::get_s()->is_affected();
 
     }
@@ -287,6 +290,35 @@ class User_model extends Emerald_model {
     public function remove_money(float $sum): bool
     {
         // TODO: task 5, списание денег
+
+        // Get user id
+        $user = self::get_user()->id;
+
+        // Withdraw money from wallet_balance and add same sum to wallet_total_withdrawn
+        App::get_s()->from(self::CLASS_TABLE)->where(['id' => $user])->update(["wallet_total_withdrawn = wallet_total_withdrawn + $sum", "wallet_balance = wallet_balance - $sum"])->execute();
+
+        // Return result
+        return App::get_s()->is_affected();
+    }
+
+    /**
+     * 
+     * @param integer $likes
+     * @return bool
+     */
+    public function add_likes(int $likes): bool
+    {
+        // Get user id
+        $user = self::get_user()->id;
+
+        // Withdraw money from wallet_balance and add same sum to wallet_total_withdrawn
+        App::get_s()->from(self::CLASS_TABLE)->where(['id' => $user])->update(["likes_balance = likes_balance + $likes"])->execute();
+
+        // Return result
+        if ( ! App::get_s()->is_affected())
+        {
+            return FALSE;
+        }
 
         return TRUE;
     }

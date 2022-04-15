@@ -88,4 +88,15 @@ class Item_model extends Emerald_model {
 
         return App::get_s()->is_affected();
     }
+
+    /**
+     * Gets all available boosterpack items for the price
+     * @param integer $price. Maximum price of item
+     * @return array
+     */
+    public static function get_items(int $price) :array
+    {
+        return App::get_s()->from(self::CLASS_TABLE)->where("price <= $price")->many();
+    }
+
 }

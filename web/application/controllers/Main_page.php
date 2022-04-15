@@ -1,10 +1,11 @@
 <?php
 
 use Model\Boosterpack_model;
+use Model\Boosterpack_info_model;
+use Model\Comment_model;
+use Model\Login_model;
 use Model\Post_model;
 use Model\User_model;
-use Model\Login_model;
-use Model\Comment_model;
 
 /**
  * Created by PhpStorm.
@@ -255,6 +256,7 @@ class Main_page extends MY_Controller
     public function get_post(int $post_id) {
         // TODO получения поста по id
 
+        // !!!
         $post = Post_model::preparation_many(Post_model::get_all(), 'full_info');
         return $this->response_success(['post' => $post]);
     }
@@ -268,6 +270,20 @@ class Main_page extends MY_Controller
         }
 
         // TODO: task 5, покупка и открытие бустерпака
+
+        // Get user
+        $user = User_model::get_user();
+        // Get boosterpack id
+        $id = (int) App::get_ci()->input->get('id');
+        // Open boosterpack
+        $bootserpack = new Boosterpack_model($id);
+        $likes = $bootserpack->open($user);
+        // 
+        if ($likes > 0)
+        {
+            return $this->response_success(["message" => "You've get $likes new likes"]);
+        }
+        return $this->response_error("You don't have enough money");
     }
 
 
@@ -279,13 +295,16 @@ class Main_page extends MY_Controller
      */
     public function get_boosterpack_info(int $bootserpack_info)
     {
+
         // Check user is authorize
         if ( ! User_model::is_logged())
         {
             return $this->response_error(System\Libraries\Core::RESPONSE_GENERIC_NEED_AUTH);
         }
 
-
         //TODO получить содержимое бустерпака
+
+        $boosterpack = new Boosterpack_model($bootserpack_info);
+        return $boosterpack->get_boosterpack_info();
     }
 }
