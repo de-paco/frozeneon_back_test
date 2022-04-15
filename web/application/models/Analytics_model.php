@@ -2,6 +2,8 @@
 namespace Model;
 use App;
 use System\Emerald\Emerald_model;
+use Model\Enum\Transaction_info;
+use Model\Enum\Transaction_type;
 
 class Analytics_model extends Emerald_Model
 {
@@ -181,6 +183,52 @@ class Analytics_model extends Emerald_Model
     public function get_analytics_for_user(int $user_id): array
     {
         return static::transform_many(App::get_s()->from(self::CLASS_TABLE)->where(['user_id' => $user_id])->orderBy('time_created', 'ASC')->many());
+    }
+
+
+
+
+    /**
+     * 
+     * @param integer user ID
+     * @param integer boosterpack ID
+     * @param integer boosterpack ID
+     * @param integer likes 
+     */
+    public static function buy_boosterback($user, $item, $price, $likes)
+    {
+        $obj = self::create([
+            'user_id' => $user,
+            'object' => Transaction_info::BOSTERPACK,
+            'action' => Transaction_type::REMOVE,
+            'object_id' => $item,
+            'amount' => $price
+        ]);
+
+        self::create([
+            'user_id' => $user,
+            'object' => Transaction_info::LIKES,
+            'action' => Transaction_type::ADD,
+            'object_id' => $obj,
+            'amount' => $likes
+        ]);
+
+    }
+
+    /**
+     * 
+     * @param integer user ID
+     * @param integer transaction sum
+     */
+    public static function add_money($user, $amount)
+    {
+        self::create([
+            'user_id' => $user,
+            'object' => Transaction_info::WALLET,
+            'action' => Transaction_type::ADD,
+            'object_id' => 0,
+            'amount' => $amount
+        ]);
     }
 
 }

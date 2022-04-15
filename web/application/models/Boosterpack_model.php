@@ -209,6 +209,9 @@ class Boosterpack_model extends Emerald_model
             throw new Exception('Likes balance was not refilled');
         }
 
+        // Log this
+        Analytics_model::buy_boosterpack($user->get_id(), $this->get_id(), $this->get_price(), $item['price']);
+
         // Set new profitbank value
         $this->set_bank($price - $item['price']);
 
