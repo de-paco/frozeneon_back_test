@@ -152,6 +152,8 @@ class Post_model extends Emerald_Model
     public function get_comments():array
     {
        // TODO: task 2, комментирование
+
+        return Comment_model::get_all_by_assign_id($this->get_id());
     }
 
     /**
@@ -185,6 +187,12 @@ class Post_model extends Emerald_Model
         return $this;
     }
 
+    public static function exist(int $id)
+    {
+        $post = App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->one();
+        return (int)$post['id'];
+    }
+
     public static function create(array $data)
     {
         App::get_s()->from(self::CLASS_TABLE)->insert($data)->execute();
@@ -213,9 +221,12 @@ class Post_model extends Emerald_Model
      * @return bool
      * @throws Exception
      */
-    public function increment_likes(User_model $user): bool
+    public function increment_likes(int $id): bool
     {
         // TODO: task 3, лайк поста
+
+        App::get_s()->from(self::CLASS_TABLE)->where(['id' => $id])->update('likes = likes + 1')->execute();
+        return App::get_s()->is_affected();
     }
 
 

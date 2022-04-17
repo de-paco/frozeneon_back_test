@@ -6,6 +6,7 @@ use Exception;
 use http\Client\Curl\User;
 use stdClass;
 use System\Emerald\Emerald_model;
+use Model\Analytics_model;
 
 /**
  * Created by PhpStorm.
@@ -269,7 +270,18 @@ class User_model extends Emerald_model {
     {
         // TODO: task 4, добавление денег
 
-        return TRUE;
+        // Get user id
+        $user = self::get_user()->id;
+
+        // Add money to wallet_balance and to wallet_total_refilled
+        App::get_s()->from(self::CLASS_TABLE)->where(['id' => $user])->update(["wallet_total_refilled = wallet_total_refilled + $sum", "wallet_balance = wallet_balance + $sum"])->execute();
+
+        // Log this
+        Analytics_model::add_money($user, $sum);
+
+        // Return result
+        return App::get_s()->is_affected();
+
     }
 
 
@@ -282,6 +294,35 @@ class User_model extends Emerald_model {
     public function remove_money(float $sum): bool
     {
         // TODO: task 5, списание денег
+
+        // Get user id
+        $user = self::get_user()->id;
+
+        // Withdraw money from wallet_balance and add same sum to wallet_total_withdrawn
+        App::get_s()->from(self::CLASS_TABLE)->where(['id' => $user])->update(["wallet_total_withdrawn = wallet_total_withdrawn + $sum", "wallet_balance = wallet_balance - $sum"])->execute();
+
+        // Return result
+        return App::get_s()->is_affected();
+    }
+
+    /**
+     * 
+     * @param integer $likes
+     * @return bool
+     */
+    public function add_likes(int $likes): bool
+    {
+        // Get user id
+        $user = self::get_user()->id;
+
+        // Withdraw money from wallet_balance and add same sum to wallet_total_withdrawn
+        App::get_s()->from(self::CLASS_TABLE)->where(['id' => $user])->update(["likes_balance = likes_balance + $likes"])->execute();
+
+        // Return result
+        if ( ! App::get_s()->is_affected())
+        {
+            return FALSE;
+        }
 
         return TRUE;
     }
@@ -347,6 +388,8 @@ class User_model extends Emerald_model {
     public static function find_user_by_email(string $email): User_model
     {
         // TODO: task 1, аутентификация
+        $user = App::get_s()->from(self::CLASS_TABLE)->where(['email' => $email])->one();
+        return static::transform_one($user);
     }
 
     /**

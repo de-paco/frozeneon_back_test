@@ -6,6 +6,8 @@ use Exception;
 use System\Emerald\Emerald_model;
 use stdClass;
 use ShadowIgniterException;
+use Model\Boosterpack_info_model;
+use Model\Item_model;
 
 /**
  * Created by PhpStorm.
@@ -135,6 +137,10 @@ class Boosterpack_model extends Emerald_model
     public function get_boosterpack_info(): array
     {
         // TODO
+
+        $id = $this->get_id();
+
+        return Boosterpack_info_model::get_by_boosterpack_id($id);
     }
 
     function __construct($id = NULL)
@@ -171,9 +177,45 @@ class Boosterpack_model extends Emerald_model
     /**
      * @return int
      */
-    public function open(): int
+    public function open(User_model $user): int
     {
         // TODO: task 5, покупка и открытие бустерпака
+
+        // Check user wallet_balance
+        if ($user->get_wallet_balance() < $this->get_price())
+        {
+            return 0;
+        }
+
+        // Get max item price
+        $price = $this->get_bank() + $this->get_price() - $this->get_us();
+
+        // Get suitable item
+        $item = $this->get_contains($price);
+        if (!$item)
+        {
+            throw new Exception('There are no available items');
+        }
+
+        // Withdraw money from user
+        if (!$user->remove_money($this->get_price()))
+        {
+            throw new Exception('Money was not withdrawn from user balance');
+        }
+
+        // Add new likes to user
+        if (!$user->add_likes($item['price']))
+        {
+            throw new Exception('Likes balance was not refilled');
+        }
+
+        // Log this
+        Analytics_model::buy_boosterpack($user->get_id(), $this->get_id(), $this->get_price(), $item['price']);
+
+        // Set new profitbank value
+        $this->set_bank($price - $item['price']);
+
+        return $item['price'];
     }
 
     /**
@@ -184,6 +226,27 @@ class Boosterpack_model extends Emerald_model
     public function get_contains(int $max_available_likes): array
     {
         // TODO: task 5, покупка и открытие бустерпака
+
+        // Get all suitable items
+        $items = Item_model::get_items($max_available_likes);
+
+        // If there are no items for the price
+        if (count($items) < 1)
+        {
+            return false;
+        }
+
+        // Get random item
+        $random = $items[array_rand($items, 1)];
+
+        // Create link between boosterpack and item
+        Boosterpack_info_model::create([
+            'boosterpack_id' => $this->get_id(),
+            'item_id' => $random['id']
+        ]);
+
+        // Return random item
+        return $random;
     }
 
 
